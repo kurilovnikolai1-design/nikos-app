@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-135217";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-135217";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-135217";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-135217";
-import { COINS } from "./rates.js?v=20260827-135217";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-135217";
-import * as store from "./store.js?v=20260827-135217";
-import * as records from "./records.js?v=20260827-135217";
-import * as attachments from "./attachments.js?v=20260827-135217";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-135635";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-135635";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-135635";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-135635";
+import { COINS } from "./rates.js?v=20260827-135635";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-135635";
+import * as store from "./store.js?v=20260827-135635";
+import * as records from "./records.js?v=20260827-135635";
+import * as attachments from "./attachments.js?v=20260827-135635";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -194,6 +194,9 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
           class: "form-control", type: "text", inputmode: "decimal", value: draft.quantity ?? "",
           oninput: (event) => set("quantity", event.target.value.replace(",", ".").trim() || null)
         }), { error });
+
+      case "sets":
+        return setsField();
 
       case "ticker":
         return field(t("form.ticker"), el("input", {
@@ -470,6 +473,69 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
 
   /* Only the file's name, size and type are kept — the file itself is never
      read into storage or sent anywhere. */
+  /* Sets are typed in a hurry, between exercises, on a phone. So: one row per
+     set, three short inputs, and a new empty row appears as soon as the last
+     one is filled — no "add" button to hunt for mid-workout. */
+  function setsField() {
+    const rows = Array.isArray(draft.sets) ? [...draft.sets] : [];
+    /* Always one blank row waiting at the end. */
+    if (!rows.length || (rows.at(-1).exercise || "").trim()) rows.push({ exercise: "", weight: "", reps: "" });
+
+    const commit = () => {
+      const kept = rows
+        .filter((row) => String(row.exercise || "").trim())
+        .map((row) => ({
+          exercise: String(row.exercise).trim(),
+          weight: row.weight === "" || row.weight === null ? null : Number(String(row.weight).replace(",", ".")),
+          reps: row.reps === "" || row.reps === null ? null : Number(row.reps)
+        }));
+      set("sets", kept.length ? kept : null);
+    };
+
+    /* Repeating the last exercise is the common case — a second set of the
+       same lift — so a new row inherits its name. */
+    const previousName = () => {
+      for (let index = rows.length - 2; index >= 0; index -= 1) {
+        if ((rows[index].exercise || "").trim()) return rows[index].exercise;
+      }
+      return "";
+    };
+
+    const host = el("div", { class: "sets-editor" }, rows.map((row, index) => el("div", { class: "set-row" }, [
+      el("input", {
+        class: "form-control", type: "text", value: row.exercise || "",
+        placeholder: index === 0 ? (getLocale() === "ru" ? "Упражнение" : "Exercise") : previousName() || "…",
+        oninput: (event) => {
+          rows[index].exercise = event.target.value;
+          commit();
+          if (index === rows.length - 1 && event.target.value.trim()) render();
+        }
+      }),
+      el("input", {
+        class: "form-control", type: "text", inputmode: "decimal", value: row.weight ?? "",
+        placeholder: getLocale() === "ru" ? "кг" : "kg",
+        oninput: (event) => { rows[index].weight = event.target.value.trim(); commit(); }
+      }),
+      el("input", {
+        class: "form-control", type: "text", inputmode: "numeric", value: row.reps ?? "",
+        placeholder: getLocale() === "ru" ? "повт." : "reps",
+        oninput: (event) => { rows[index].reps = event.target.value.trim(); commit(); }
+      }),
+      el("button", {
+        class: "text-button danger", type: "button", "aria-label": getLocale() === "ru" ? "Убрать подход" : "Remove set",
+        text: "×",
+        onclick: () => { rows.splice(index, 1); commit(); render(); }
+      })
+    ])));
+
+    return field(getLocale() === "ru" ? "Подходы" : "Sets", host, {
+      wide: true,
+      hint: getLocale() === "ru"
+        ? "Вес можно не указывать — для подтягиваний и планки достаточно повторов"
+        : "Weight is optional — reps alone are enough for bodyweight work"
+    });
+  }
+
   function fileField() {
     const attachment = draft.attachment;
 

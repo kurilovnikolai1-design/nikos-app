@@ -2,26 +2,27 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-135217";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-135217";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-135635";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-135635";
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-135217";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-135217";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-135217";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-135217";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-135217";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-135217";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-135217";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-135217";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-135217";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-135217";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-135217";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-135217";
-import { parseReport } from "./procedures.js?v=20260827-135217";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-135217";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-135217";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-135217";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-135217";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-135635";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-135635";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-135635";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-135635";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-135635";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-135635";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-135635";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-135635";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-135635";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-135635";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-135635";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-135635";
+import { parseReport } from "./procedures.js?v=20260827-135635";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-135635";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-135635";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-135635";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-135635";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-135635";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -279,11 +280,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-135217")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-135635")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-135217")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-135635")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -292,14 +293,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-135217")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-135635")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-135217")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-135635")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -498,6 +499,47 @@ const unpriced = positionBook([
 check("бумага без котировки не ломает портфель", unpriced.valueMinor > 0);
 check("но посчитана отдельно", unpriced.unpriced === 1,
       "иначе сумма молча относится к меньшему числу позиций, чем показано");
+
+/* ---------- Training ---------- */
+
+const session = (id, date, sets) => ({ id, type: "workout", date, sets, deletedAt: null, linkedIds: [] });
+const log = [
+  session("t1", "2026-07-01", [{ exercise: "Жим лёжа", weight: 90, reps: 5 },
+                               { exercise: "Жим лёжа", weight: 90, reps: 5 },
+                               { exercise: "Присед", weight: 120, reps: 5 }]),
+  session("t2", "2026-07-15", [{ exercise: "жим лёжа", weight: 95, reps: 5 }]),
+  session("t3", "2026-08-20", [{ exercise: "Жим лёжа", weight: 100, reps: 5 },
+                               { exercise: "Подтягивания", reps: 12 }])
+];
+const lifts = byExercise(log);
+const bench = lifts.find((group) => group.name.toLowerCase() === "жим лёжа");
+
+check("подходы одного упражнения сводятся", bench?.count === 3, String(bench?.count));
+check("регистр в названии не создаёт второе упражнение",
+      lifts.filter((group) => group.name.toLowerCase() === "жим лёжа").length === 1);
+check("лучший вес найден", bench?.heaviest.bestWeight === 100);
+check("направление показано с третьей тренировки", bench?.trend?.changeKg === 10);
+
+const squat = lifts.find((group) => group.name === "Присед");
+check("по двум точкам направление не выводится", squat?.trend === null,
+      "две тренировки — это не тенденция");
+
+const pullups = lifts.find((group) => group.name === "Подтягивания");
+check("работа с весом тела считается", pullups?.latest.reps === 12);
+check("но не даёт выдуманного тоннажа", pullups?.latest.volume === 0,
+      "вес тела нельзя придумать, иначе объём станет вымыслом");
+
+check("мусорный подход отбрасывается",
+      setsOf({ sets: [{ exercise: "  ", weight: 50, reps: 5 }, { exercise: "Тяга", weight: "x", reps: 8 }] }).length === 1);
+check("нечисловой вес становится пустым",
+      setsOf({ sets: [{ exercise: "Тяга", weight: "x", reps: 8 }] })[0].weight === null);
+
+const weeks = weeklyVolume(log, { weeks: 3, now: new Date("2026-08-27T12:00:00") });
+check("объём разложен по неделям", weeks.length === 3);
+check("неделя с тренировкой имеет объём", weeks.some((week) => week.volume === 500), JSON.stringify(weeks));
+
+const bests = freshRecords(log, { now: new Date("2026-08-27T12:00:00") });
+check("новый рекорд замечен", bests.length === 1 && bests[0].weight === 100);
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

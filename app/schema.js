@@ -229,7 +229,10 @@ export const TYPES = {
     view: "health", icon: "⚡", role: BALANCE_ROLE.NONE, sensitive: true,
     title: { ru: "Тренировка", en: "Workout" },
     plural: { ru: "Тренировки", en: "Workouts" },
-    fields: ["name", "category", "date", "duration", "distance", "intensity", "feeling", "status", "owner", "source", "linked", "details"],
+    /* WHOOP brings load and recovery, which say how hard a session was. What
+       it cannot say is whether the bench press went up — that lives in the
+       sets, and without them there is no progression to see. */
+    fields: ["name", "category", "date", "duration", "distance", "sets", "intensity", "feeling", "status", "owner", "source", "linked", "details"],
     statuses: ["planned", "done", "archived"], defaultStatus: "done",
     categories: [c("gym", "Зал / силовая", "Gym"), c("run", "Бег", "Run"), c("walk", "Ходьба", "Walk"),
                  c("bike", "Велосипед", "Bike"), c("swim", "Плавание", "Swim"), c("box", "Единоборства", "Combat"),

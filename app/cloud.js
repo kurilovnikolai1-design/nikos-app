@@ -5,9 +5,9 @@
    merged by updatedAt, and a delete is synced as a soft delete so a device
    that has been offline cannot resurrect a removed record. */
 
-import { t, getLocale } from "./i18n.js?v=20260827-135217";
-import * as store from "./store.js?v=20260827-135217";
-import { migrateRecord } from "./records.js?v=20260827-135217";
+import { t, getLocale } from "./i18n.js?v=20260827-135635";
+import * as store from "./store.js?v=20260827-135635";
+import { migrateRecord } from "./records.js?v=20260827-135635";
 
 const CONFIG_KEY = "nikos-cloud-config";
 const CONSENT_KEY = "nikos-cloud-consent";
@@ -49,7 +49,7 @@ function loadLibrary() {
   if (libraryPromise) return libraryPromise;
   libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "vendor/supabase.js?v=20260827-135217";
+    script.src = "vendor/supabase.js?v=20260827-135635";
     script.async = true;
     script.onload = () => (globalThis.supabase?.createClient ? resolve(globalThis.supabase) : reject(new Error("supabase missing")));
     script.onerror = () => reject(new Error("supabase failed to load"));

@@ -1037,6 +1037,48 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .position-row.down .position-pnl { color: var(--danger, #d9534f); }
 .position-pnl.muted { color: var(--faint); font-weight: 400; white-space: normal; }
 
+/* Sets, typed between exercises on a phone: four short fields per row. */
+.sets-editor { display: grid; gap: 6px; }
+.set-row {
+  display: grid; gap: 6px; align-items: center;
+  grid-template-columns: minmax(0, 1fr) 4.5rem 4.5rem 1.75rem;
+}
+.set-row .form-control { min-height: 40px; padding: 6px 10px; font-size: var(--step-sm); }
+.set-row .text-button { font-size: var(--step-md); line-height: 1; padding: 4px; }
+
+/* A personal best, stated plainly. */
+.pr-list { display: grid; gap: 6px; }
+.pr-row {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.pr-row strong { flex: 1 1 auto; font-size: var(--step-sm); }
+.pr-row b { font-variant-numeric: tabular-nums; font-size: var(--step-md); }
+.pr-row time { color: var(--faint); font-size: var(--step-xs); }
+
+.volume-chart { display: grid; gap: 6px; margin-bottom: 14px; }
+.exercise-list { display: grid; gap: 8px; }
+.exercise-row {
+  display: grid; gap: 3px; padding: 11px 13px;
+  border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+}
+.exercise-row.up { border-left-color: var(--good, #3e8e6e); }
+.exercise-row.down { border-left-color: var(--warn); }
+.exercise-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 4px 12px;
+}
+.exercise-head strong { font-size: var(--step-sm); }
+.exercise-best { font-weight: 700; font-variant-numeric: tabular-nums; }
+.exercise-note { color: var(--faint); font-size: var(--step-xs); line-height: 1.5; }
+
+@media (max-width: 420px) {
+  .set-row { grid-template-columns: minmax(0, 1fr) 3.75rem 3.75rem 1.5rem; }
+}
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

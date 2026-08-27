@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-135217";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-135635";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -387,7 +387,9 @@ export const PLURALS = {
   analyte:  { ru: { one: "показатель", few: "показателя", many: "показателей", other: "показателя" },
               en: { one: "analyte", other: "analytes" } },
   month:    { ru: { one: "месяц", few: "месяца", many: "месяцев", other: "месяца" },
-              en: { one: "month", other: "months" } }
+              en: { one: "month", other: "months" } },
+  exercise: { ru: { one: "упражнение", few: "упражнения", many: "упражнений", other: "упражнения" },
+              en: { one: "exercise", other: "exercises" } }
 };
 
 /* "3 пункта требуют внимания" — verb agreement matters too. */

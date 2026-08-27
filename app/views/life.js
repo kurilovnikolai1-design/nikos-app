@@ -1,26 +1,27 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-135217";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-135635";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-135217";
-import { formatMoney } from "../money.js?v=20260827-135217";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-135217";
-import { categoriesOf } from "../schema.js?v=20260827-135217";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-135217";
-import { openRecordForm } from "../form.js?v=20260827-135217";
-import { navigate } from "../router.js?v=20260827-135217";
-import { importCsv } from "../csv.js?v=20260827-135217";
-import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-135217";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-135217";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-135217";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-135217";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-135217";
-import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-135217";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-135217";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-135217";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-135217";
-import * as store from "../store.js?v=20260827-135217";
-import * as records from "../records.js?v=20260827-135217";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-135635";
+import { formatMoney } from "../money.js?v=20260827-135635";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-135635";
+import { categoriesOf } from "../schema.js?v=20260827-135635";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-135635";
+import { openRecordForm } from "../form.js?v=20260827-135635";
+import { navigate } from "../router.js?v=20260827-135635";
+import { importCsv } from "../csv.js?v=20260827-135635";
+import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-135635";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-135635";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-135635";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-135635";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-135635";
+import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-135635";
+import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-135635";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-135635";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-135635";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-135635";
+import * as store from "../store.js?v=20260827-135635";
+import * as records from "../records.js?v=20260827-135635";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -286,12 +287,77 @@ export function healthView() {
   /* ---------- The remaining tabs ---------- */
 
   function sportPanel() {
-    return panel("records-panel",
+    const host = document.createDocumentFragment();
+    const exercises = byExercise(workouts);
+
+    /* A personal best is the reason anyone keeps a log, so it goes first. */
+    const fresh = freshRecords(workouts);
+    if (fresh.length) {
+      host.append(panel("records-panel",
+        panelHeader(ru() ? "НОВЫЕ РЕКОРДЫ" : "NEW BESTS",
+          ru() ? "За последний месяц" : "In the last month",
+          el("span", { class: "security-badge", text: String(fresh.length) })),
+        el("div", { class: "pr-list" }, fresh.map((item) => el("div", { class: "pr-row" }, [
+          el("strong", { text: item.name }),
+          el("b", { text: `${formatNumber(item.weight, 1)} ${ru() ? "кг" : "kg"}` }),
+          el("time", { datetime: item.date, text: formatDate(item.date, "medium") })
+        ])))));
+    }
+
+    if (exercises.length) {
+      const volume = weeklyVolume(workouts, { weeks: 8 });
+      const lifted = volume.some((week) => week.volume > 0);
+
+      host.append(panel("records-panel",
+        panelHeader(ru() ? "ПРОГРЕССИЯ" : "PROGRESSION",
+          ru() ? `${exercises.length} ${plural(exercises.length, PLURALS.exercise)}` : `${exercises.length} exercises`),
+
+        lifted ? el("div", { class: "volume-chart" }, [
+          el("span", { class: "panel-kicker", text: ru() ? "ОБЪЁМ ПО НЕДЕЛЯМ, КГ" : "WEEKLY VOLUME, KG" }),
+          sparkline(volume.map((week) => ({ date: week.from, value: week.volume })), { tone: "cyan", height: 70 })
+        ]) : null,
+
+        el("div", { class: "exercise-list" }, exercises.map((group) => el("div", {
+          class: `exercise-row${group.trend?.direction === "up" ? " up" : ""}${group.trend?.direction === "down" ? " down" : ""}`
+        }, [
+          el("div", { class: "exercise-head" }, [
+            el("strong", { text: group.name }),
+            el("span", { class: "exercise-best", text: group.heaviest?.bestWeight !== null && group.heaviest
+              ? `${formatNumber(group.heaviest.bestWeight, 1)} ${ru() ? "кг" : "kg"}`
+              : `${group.latest.reps} ${ru() ? "повт." : "reps"}` })
+          ]),
+          el("small", { class: "exercise-note", text: (() => {
+            /* A Russian medium date already ends in "г.", so appending a full
+               stop produced "23 авг. 2026 г..". */
+            const noDot = (date) => formatDate(date, "medium").replace(/\.$/, "");
+            const when = noDot(group.lastDate);
+            const base = ru()
+              ? `${countOf(group.count, PLURALS.workout)}, последняя ${when}`
+              : `${group.count} sessions, last ${when}`;
+            if (!group.trend) {
+              return group.count < 3
+                ? `${base}. ${ru() ? "Для направления нужна третья тренировка." : "A third session is needed to show direction."}`
+                : base;
+            }
+            const change = group.trend.changeKg;
+            const word = change > 0 ? (ru() ? "прибавка" : "up") : change < 0 ? (ru() ? "снижение" : "down") : (ru() ? "без изменений" : "flat");
+            return change === 0
+              ? `${base}. ${word}.`
+              : `${base}. ${word} ${formatNumber(Math.abs(change), 1)} ${ru() ? "кг" : "kg"} ${ru() ? "с" : "since"} ${noDot(group.trend.from)}.`;
+          })() })
+        ]))),
+
+        el("p", { class: "panel-note", text: ru() ? TRAINING_NOTE.ru : TRAINING_NOTE.en })));
+    }
+
+    host.append(panel("records-panel",
       panelHeader(ru() ? "ТРЕНИРОВКИ" : "WORKOUTS", countOf(workouts.length, PLURALS.workout)),
       recordList("health-workouts", sortByDate(workouts), {
         empty: ru() ? "Запишите первую тренировку — зал, бег, что угодно." : "Log your first workout.",
         addType: "workout"
-      }));
+      })));
+
+    return host;
   }
 
   function recordsPanel() {
