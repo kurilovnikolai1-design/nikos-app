@@ -320,7 +320,7 @@ export function inboxView() {
 
 /* ---------- Tasks ---------- */
 
-const taskState = { layout: "list", period: "all", priority: "all", category: "all", offset: 0 };
+const taskState = { layout: "list", period: "all", priority: "all", category: "all", offset: 0, day: null };
 
 export function tasksView() {
   const all = store.recordsOfType("task");
@@ -370,6 +370,14 @@ export function tasksView() {
     countChip("done", statusLabel("done"), counts.done)
   ]));
 
+  if (taskState.day) {
+    page.append(el("div", { class: "active-filter" }, [
+      el("span", { text: `${ru() ? "Показан день" : "Showing"}: ${formatDate(taskState.day, "long")}` }),
+      el("button", { class: "text-button", type: "button", text: ru() ? "Показать все дни ✕" : "Show all days ✕",
+                     onclick: () => { taskState.day = null; refresh(); } })
+    ]));
+  }
+
   const filtered = filterTasks(all);
 
   if (taskState.layout === "calendar") page.append(taskCalendar(filtered));
@@ -386,14 +394,14 @@ export function tasksView() {
   function segButton(value, label) {
     return el("button", {
       class: `seg-button${taskState.layout === value ? " selected" : ""}`, type: "button", text: label,
-      onclick: () => { taskState.layout = value; refresh(); }
+      onclick: () => { taskState.layout = value; if (value === "calendar") taskState.day = null; refresh(); }
     });
   }
 
   function countChip(value, label, count) {
     return el("button", {
       class: `filter-chip${taskState.period === value ? " selected" : ""}`, type: "button",
-      onclick: () => { taskState.period = value; refresh(); }
+      onclick: () => { taskState.period = value; taskState.day = null; refresh(); }
     }, [label, el("b", { text: String(count) })]);
   }
 
@@ -408,6 +416,7 @@ export function tasksView() {
 function filterTasks(all) {
   const now = records.today();
   return all.filter((task) => {
+    if (taskState.day && task.date !== taskState.day) return false;
     if (taskState.priority !== "all" && task.priority !== taskState.priority) return false;
     if (taskState.category !== "all" && task.category !== taskState.category) return false;
 
@@ -456,6 +465,10 @@ function taskCalendar(tasks) {
     if (key === records.today()) classes.push("today");
     if (day.getMonth() !== anchor.getMonth()) classes.push("outside");
 
+    const addLabel = ru()
+      ? `Добавить задачу на ${formatDate(key, "long")}`
+      : `Add a task on ${formatDate(key, "long")}`;
+
     return el("div", { class: classes.join(" ") }, [
       el("div", { class: "task-day-head" }, [
         el("span", { text: dayNames[index % 7] }),
@@ -466,8 +479,18 @@ function taskCalendar(tasks) {
         dataset: { recordId: task.id },
         onclick: () => openRecordForm("task", task, { onSaved: refresh })
       }, [el("strong", { text: task.name })])),
-      items.length > 4 ? el("small", { class: "task-day-more", text: `+${items.length - 4}` }) : null,
-      items.length ? null : el("div", { class: "task-day-empty", text: "" })
+      items.length > 4 ? el("button", {
+        class: "task-day-more", type: "button",
+        text: `${ru() ? "ещё" : "more"} +${items.length - 4}`,
+        onclick: () => { taskState.layout = "list"; taskState.period = "all"; taskState.day = key; refresh(); }
+      }) : null,
+      /* The rest of the cell is a target of its own: tapping an empty day
+         opens a new task already dated to that day, which is the thing you
+         actually want a calendar for. */
+      el("button", {
+        class: "task-day-add", type: "button", "aria-label": addLabel, title: addLabel,
+        onclick: () => openRecordForm("task", null, { presets: { date: key }, onSaved: refresh })
+      }, [el("span", { class: "task-day-plus", "aria-hidden": "true", text: "＋" })])
     ]);
   });
 

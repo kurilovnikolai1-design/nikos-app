@@ -662,17 +662,44 @@ button.metric-card:hover { border-color: var(--border-strong); }
 
 .task-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .task-day {
+  position: relative;
   display: flex; flex-direction: column; gap: 4px;
   min-height: 96px; padding: 8px;
   border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2);
+  transition: border-color .14s ease, background .14s ease;
 }
+.task-day:hover { border-color: var(--border-strong); background: var(--surface-3); }
 .task-day.outside { opacity: .42; }
 .task-day.today { border-color: var(--accent); }
 .task-day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
 .task-day-head span { color: var(--faint); font: 500 var(--step-xs)/1 var(--mono); text-transform: uppercase; }
 .task-day-head b { font-size: var(--step-sm); font-weight: 700; }
-.task-day-empty { flex: 1; }
-.task-day-more { color: var(--faint); font-size: var(--step-xs); }
+.task-day-more {
+  align-self: flex-start; padding: 2px 6px; border-radius: 5px;
+  color: var(--faint); font-size: var(--step-xs);
+}
+.task-day-more:hover { color: var(--accent); background: var(--surface-hover); }
+
+/* The empty part of a day is its own target: tapping it starts a task already
+   dated to that day. It stays quiet until the cell is hovered or focused. */
+.task-day-add {
+  flex: 1; min-height: 26px; width: 100%;
+  display: grid; place-items: center;
+  border-radius: 6px; color: var(--faint);
+  opacity: 0; transition: opacity .14s ease, background .14s ease;
+}
+.task-day:hover .task-day-add,
+.task-day-add:focus-visible { opacity: 1; }
+.task-day-add:hover { background: var(--surface-hover); color: var(--accent); }
+.task-day-plus { font-size: var(--step-md); line-height: 1; }
+.task-day.outside .task-day-add { color: var(--faint); }
+
+.active-filter {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  padding: 11px 14px; margin-bottom: 14px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--muted); font-size: var(--step-sm);
+}
 
 .calendar-task {
   padding: 5px 7px; border-radius: 6px; text-align: left; width: 100%;
@@ -1010,8 +1037,10 @@ input[type="date"].form-control, input[type="time"].form-control { font-family: 
   .dialog-actions > * { width: 100%; }
 
   .task-calendar-grid { gap: 3px; }
-  .task-day { min-height: 74px; padding: 5px; }
+  .task-day { min-height: 78px; padding: 5px; }
   .task-day-head span { display: none; }
+  /* No hover on a touch screen — the add target has to announce itself. */
+  .task-day-add { opacity: .5; min-height: 30px; }
   .csv-column { grid-template-columns: 22px minmax(0, 1fr); }
   .csv-column select { grid-column: 2; }
 }
