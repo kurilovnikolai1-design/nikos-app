@@ -1015,6 +1015,22 @@ document.addEventListener("click", (event) => {
 const cloudConfigKey = "nikos-cloud-config";
 let cloudClient = null;
 let cloudUser = null;
+const authGate = document.getElementById("authGate");
+const authGateForm = document.getElementById("authGateForm");
+const authGateConfig = document.getElementById("authGateConfig");
+const authGateStatus = document.getElementById("authGateStatus");
+let appUnlocked = false;
+function setAuthGateStatus(message = "") { if (authGateStatus) authGateStatus.textContent = message; }
+function unlockApp() {
+  appUnlocked = true;
+  document.body.classList.remove("auth-locked");
+  if (authGate) { authGate.hidden = true; authGate.setAttribute("aria-hidden", "true"); }
+}
+function lockApp() {
+  appUnlocked = false;
+  document.body.classList.add("auth-locked");
+  if (authGate) { authGate.hidden = false; authGate.setAttribute("aria-hidden", "false"); }
+}
 function loadCloudConfig() {
   try { return JSON.parse(localStorage.getItem(cloudConfigKey) || "null"); } catch { return null; }
 }
@@ -1039,6 +1055,53 @@ function restoreCloudDraft() {
     if (key && !key.value) key.value = draft.key || "";
     if (email && !email.value) email.value = draft.email || "";
   } catch { /* Draft persistence is optional. */ }
+}
+function restoreAuthGateFields() {
+  const config = loadCloudConfig();
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(cloudDraftKey) || "null"); } catch { draft = null; }
+  const url = document.getElementById("authGateUrl");
+  const key = document.getElementById("authGateKey");
+  const email = document.getElementById("authGateEmail");
+  if (url) url.value = config?.url || draft?.url || "";
+  if (key) key.value = config?.key || draft?.key || "";
+  if (email) email.value = draft?.email || "";
+  if (authGateConfig) authGateConfig.hidden = Boolean(config?.url && config?.key);
+}
+async function submitAuthGate(event) {
+  event.preventDefault();
+  setAuthGateStatus("");
+  const url = document.getElementById("authGateUrl")?.value.trim();
+  const key = document.getElementById("authGateKey")?.value.trim();
+  const email = document.getElementById("authGateEmail")?.value.trim();
+  const password = document.getElementById("authGatePassword")?.value || "";
+  if (!url || !key) { if (authGateConfig) authGateConfig.hidden = false; setAuthGateStatus("Укажите URL проекта и публичный ключ Supabase."); return; }
+  if (!email || !password) { setAuthGateStatus("Введите email и пароль аккаунта."); return; }
+  if (!document.getElementById("authGateConsent")?.checked) { setAuthGateStatus("Подтвердите доступ Nik'Os к вашим записям."); return; }
+  const submit = authGateForm?.querySelector("button[type=submit]");
+  if (submit) submit.disabled = true;
+  try {
+    const urlField = document.getElementById("supabaseUrl");
+    const keyField = document.getElementById("supabaseAnonKey");
+    const emailField = document.getElementById("cloudEmail");
+    if (urlField) urlField.value = url;
+    if (keyField) keyField.value = key;
+    if (emailField) emailField.value = email;
+    saveCloudDraft();
+    if (!window.supabase?.createClient || !configureCloudClient()) { setAuthGateStatus("Не удалось подготовить подключение Supabase."); return; }
+    const result = await cloudClient.auth.signInWithPassword({ email, password });
+    if (result.error) { setAuthGateStatus(result.error.message); return; }
+    cloudUser = result.data.session?.user || null;
+    if (!cloudUser) { setAuthGateStatus("Supabase не вернул активную сессию."); return; }
+    localStorage.setItem("nikos-cloud-consent", "true");
+    setCloudStatus("connected");
+    unlockApp();
+    await syncAllCloudRecords();
+  } catch (error) {
+    setAuthGateStatus(error?.message || "Не удалось войти. Проверьте данные и попробуйте снова.");
+  } finally {
+    if (submit) submit.disabled = false;
+  }
 }
 function ensureRecordId(record) {
   if (record.id) return record;
@@ -1133,22 +1196,24 @@ async function connectCloud(createAccount = false) {
 }
 async function initCloud() {
   restoreCloudDraft();
+  restoreAuthGateFields();
   const config = loadCloudConfig();
-  if (!config || !window.supabase?.createClient) { setCloudStatus(config ? "ready" : "setup"); return; }
+  if (!config || !window.supabase?.createClient) { setCloudStatus(config ? "ready" : "setup"); lockApp(); return; }
   const urlField = document.getElementById("supabaseUrl");
   const keyField = document.getElementById("supabaseAnonKey");
   if (urlField) urlField.value = config.url || "";
   if (keyField) keyField.value = config.key || "";
   if (!configureCloudClient()) return;
-  cloudClient.auth.onAuthStateChange((_event, session) => { cloudUser = session?.user || null; setCloudStatus(cloudUser ? "connected" : "ready"); });
+  cloudClient.auth.onAuthStateChange((_event, session) => { cloudUser = session?.user || null; setCloudStatus(cloudUser ? "connected" : "ready"); if (cloudUser) unlockApp(); else lockApp(); });
   const sessionResult = await cloudClient.auth.getSession();
   cloudUser = sessionResult.data.session?.user || null;
   setCloudStatus(cloudUser ? "connected" : "ready");
-  if (cloudUser && localStorage.getItem("nikos-cloud-consent")) await syncAllCloudRecords();
+  if (cloudUser && localStorage.getItem("nikos-cloud-consent")) { unlockApp(); await syncAllCloudRecords(); } else lockApp();
 }
+authGateForm?.addEventListener("submit", (event) => { void submitAuthGate(event); });
 document.getElementById("cloudConnect")?.addEventListener("click", () => { void connectCloud(false); });
 document.getElementById("cloudSignUp")?.addEventListener("click", () => { void connectCloud(true); });
-document.getElementById("cloudSignOut")?.addEventListener("click", async () => { if (cloudClient) await cloudClient.auth.signOut(); cloudUser = null; setCloudStatus("ready"); showToast(ui("Signed out. Local records remain on this device.", "Вы вышли. Локальные записи остались на этом устройстве.")); });
+document.getElementById("cloudSignOut")?.addEventListener("click", async () => { if (cloudClient) await cloudClient.auth.signOut(); cloudUser = null; setCloudStatus("ready"); lockApp(); setAuthGateStatus(""); showToast(ui("Signed out. Local records remain on this device.", "Вы вышли. Локальные записи остались на этом устройстве.")); });
 document.querySelectorAll("#supabaseUrl, #supabaseAnonKey, #cloudEmail").forEach((input) => input.addEventListener("input", saveCloudDraft));
 void initCloud();
 

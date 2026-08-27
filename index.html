@@ -15,10 +15,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css?v=20260827-full-audit-2" />
+    <link rel="stylesheet" href="styles.css?v=20260827-full-audit-3" />
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
-  <body>
+  <body class="auth-locked">
+    <section class="auth-gate" id="authGate" aria-labelledby="authGateTitle">
+      <div class="auth-gate-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="auth-gate-card">
+        <div class="auth-gate-brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><span>Nik'Os</span></div>
+        <div class="panel-kicker">PRIVATE CONTROL ROOM</div>
+        <h1 id="authGateTitle">Вход в Nik'Os</h1>
+        <p class="auth-gate-copy">Панель и записи скрыты до проверки вашего аккаунта.</p>
+        <form id="authGateForm" class="auth-gate-form">
+          <div class="auth-gate-config" id="authGateConfig">
+            <label><span>URL проекта Supabase</span><input id="authGateUrl" type="url" autocomplete="url" placeholder="https://your-project.supabase.co" /></label>
+            <label><span>Публичный ключ Supabase</span><input id="authGateKey" type="password" autocomplete="off" placeholder="Publishable / anon key" /></label>
+            <p class="auth-gate-help">На новом устройстве эти два поля вводятся один раз. Они не являются паролем.</p>
+          </div>
+          <label><span>Email аккаунта</span><input id="authGateEmail" type="email" autocomplete="username" required placeholder="you@example.com" /></label>
+          <label><span>Пароль</span><input id="authGatePassword" type="password" autocomplete="current-password" required placeholder="Ваш пароль Supabase" /></label>
+          <label class="auth-gate-consent"><input id="authGateConsent" type="checkbox" required /><span>Разрешаю Nik'Os загружать мои записи из моего Supabase.</span></label>
+          <button class="primary-button auth-gate-submit" type="submit">Войти в Nik'Os <span>→</span></button>
+          <p class="auth-gate-status" id="authGateStatus" role="status"></p>
+        </form>
+        <p class="auth-gate-footnote">Без успешного входа рабочая панель не открывается. Ник'Os не принимает seed-фразы и приватные ключи.</p>
+      </div>
+    </section>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar">
         <div class="brand-lockup">
@@ -202,6 +224,6 @@
       </div>
     </div>
     <div class="toast" id="toast" role="status"></div>
-    <script src="app.js?v=20260827-full-audit-7"></script>
+    <script src="app.js?v=20260827-full-audit-8"></script>
   </body>
 </html>

@@ -1,9 +1,9 @@
-const CACHE_NAME = "nikos-shell-v1";
+const CACHE_NAME = "nikos-shell-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260827-full-audit-2",
-  "./app.js?v=20260827-full-audit-7",
+  "./styles.css?v=20260827-full-audit-3",
+  "./app.js?v=20260827-full-audit-8",
   "./manifest.webmanifest",
   "./nikos-icon.svg"
 ];
