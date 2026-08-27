@@ -5,7 +5,8 @@
    "Запись сохранена". Every write here returns an explicit result, and the
    caller is required to surface a failure. */
 
-import * as lock from "./lock.js?v=20260827-081615";
+import * as lock from "./lock.js?v=20260827-082424";
+import * as idb from "./idb.js?v=20260827-082424";
 
 export const VAULT_KEY = "nikos-vault";
 export const META_KEY = "nikos-vault-meta";
@@ -64,6 +65,36 @@ export const emptyVault = () => ({
   savedAt: null
 });
 
+/* IndexedDB is the real home; localStorage remains only as a fallback for a
+   browser without it, and as the place a previous version left its data. */
+let useIdb = idb.isSupported();
+
+async function readVault() {
+  if (useIdb) {
+    try {
+      const stored = await idb.get(VAULT_KEY);
+      if (typeof stored === "string") return stored;
+    } catch { useIdb = false; }
+  }
+  return readRaw(VAULT_KEY);
+}
+
+async function writeVault(value) {
+  if (useIdb) {
+    try {
+      await idb.put(VAULT_KEY, value);
+      // Once IndexedDB holds it, the localStorage copy is dead weight against
+      // a 5 MB cap that this move exists to escape.
+      try { localStorage.removeItem(VAULT_KEY); } catch { /* best effort */ }
+      return { result: RESULT.OK };
+    } catch (error) {
+      const isQuota = error?.name === "QuotaExceededError";
+      return { result: isQuota ? RESULT.QUOTA : RESULT.UNAVAILABLE, error };
+    }
+  }
+  return writeRaw(VAULT_KEY, value);
+}
+
 function readRaw(key) {
   try { return localStorage.getItem(key); } catch { return null; }
 }
@@ -95,7 +126,7 @@ function writeMeta(meta) {
 
 /* Returns { status, vault } where status is "ok" | "needs-pin" | "empty" | "corrupt". */
 export async function load() {
-  const raw = readRaw(VAULT_KEY);
+  const raw = await readVault();
 
   if (!raw) {
     const migrated = migrateLegacy();
@@ -118,7 +149,7 @@ export async function load() {
 
 /* Unlock an encrypted vault with a PIN. Returns { ok, vault } or { ok:false }. */
 export async function unlock(pin) {
-  const raw = readRaw(VAULT_KEY);
+  const raw = await readVault();
   if (!raw) return { ok: false, reason: "empty" };
   let envelope;
   try { envelope = JSON.parse(raw); } catch { return { ok: false, reason: "corrupt" }; }
@@ -185,14 +216,14 @@ export async function save(vault) {
     } catch {
       return { result: RESULT.FAILED };
     }
-    const written = writeRaw(VAULT_KEY, JSON.stringify(envelope));
+    const written = await writeVault(JSON.stringify(envelope));
     if (written.result === RESULT.OK) writeMeta({ encrypted: true, savedAt: new Date().toISOString() });
     return written;
   }
 
   if (isEncrypted()) return { result: RESULT.LOCKED };
 
-  const written = writeRaw(VAULT_KEY, payload);
+  const written = await writeVault(payload);
   if (written.result === RESULT.OK) writeMeta({ encrypted: false, savedAt: new Date().toISOString() });
   return written;
 }
@@ -215,7 +246,13 @@ export async function disableEncryption(vault) {
 
 /* ---------- Diagnostics ---------- */
 
-export function usage() {
+/* The browser's real numbers when IndexedDB is in use, instead of the 5 MB
+   guess localStorage forced on us. */
+export async function usage() {
+  if (useIdb) {
+    const estimate = await idb.quota();
+    if (estimate) return { bytes: estimate.usage, limit: estimate.quota, percent: estimate.percent, backend: "indexeddb" };
+  }
   let bytes = 0;
   try {
     for (let index = 0; index < localStorage.length; index += 1) {
@@ -223,15 +260,11 @@ export function usage() {
       if (key?.startsWith("nikos-")) bytes += (localStorage.getItem(key) || "").length + key.length;
     }
   } catch { return null; }
-  // Browsers commonly cap an origin at about 5 MB of UTF-16 storage.
   const limit = 5 * 1024 * 1024;
-  return { bytes, limit, percent: Math.min(100, Math.round((bytes / limit) * 100)) };
+  return { bytes, limit, percent: Math.min(100, Math.round((bytes / limit) * 100)), backend: "localstorage" };
 }
 
-/* Confirm a payload will actually fit before promising the owner it was saved. */
-export function willFit(vault) {
-  const size = JSON.stringify(vault).length;
-  const current = usage();
-  if (!current) return true;
-  return size < current.limit * 0.95;
-}
+export const backend = () => (useIdb ? "indexeddb" : "localstorage");
+
+/* Ask the browser not to evict this origin when the phone runs short of space. */
+export const requestPersistence = () => idb.requestPersistence();

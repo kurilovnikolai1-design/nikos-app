@@ -1,18 +1,18 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-081615";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-081615";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-081615";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-081615";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-081615";
-import * as lock from "../lock.js?v=20260827-081615";
-import * as persist from "../persist.js?v=20260827-081615";
-import * as store from "../store.js?v=20260827-081615";
-import * as records from "../records.js?v=20260827-081615";
-import * as cloud from "../cloud.js?v=20260827-081615";
-import { refreshRates } from "../main-rates.js?v=20260827-081615";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-081615";
-import { whoopRow } from "../whoop.js?v=20260827-081615";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-082424";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-082424";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-082424";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-082424";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-082424";
+import * as lock from "../lock.js?v=20260827-082424";
+import * as persist from "../persist.js?v=20260827-082424";
+import * as store from "../store.js?v=20260827-082424";
+import * as records from "../records.js?v=20260827-082424";
+import * as cloud from "../cloud.js?v=20260827-082424";
+import { refreshRates } from "../main-rates.js?v=20260827-082424";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-082424";
+import { whoopRow } from "../whoop.js?v=20260827-082424";
 
 const ru = () => getLocale() === "ru";
 
@@ -212,8 +212,16 @@ export function settingsView() {
   /* ---------- Backup ---------- */
 
   function backupPanel() {
-    const usage = persist.usage();
     const demoCount = countDemo(store.allRecords());
+    const storageRow = el("div", { class: "setting-row" }, [
+      el("span", { class: "setting-icon", "aria-hidden": "true", text: "▤" }),
+      el("span", { class: "setting-copy" }, [
+        el("strong", { text: ru() ? "Место для данных" : "Storage" }),
+        el("small", { text: ru() ? "Считаю…" : "Checking…" })
+      ]),
+      el("span", { class: "setting-control" }, [el("div", { class: "usage-bar" }, [el("i", { style: "width:0%" })])])
+    ]);
+    void describeStorage(storageRow);
 
     return panel("settings-panel",
       panelHeader(ru() ? "ДАННЫЕ" : "DATA", t("set.backup")),
@@ -228,10 +236,7 @@ export function settingsView() {
           ru() ? "Заменит текущие записи содержимым файла" : "Replaces current records with the file",
           el("button", { class: "ghost-button", type: "button", text: t("set.importData"), onclick: restoreBackup })),
 
-        usage ? settingRow("▤",
-          ru() ? "Место в браузере" : "Browser storage",
-          `${(usage.bytes / 1024 / 1024).toFixed(2)} MB ${t("app.of")} ~5 MB · ${usage.percent}%`,
-          el("div", { class: "usage-bar" }, [el("i", { style: `width:${Math.min(100, usage.percent)}%`, class: usage.percent > 80 ? "warn" : "" })])) : null,
+        storageRow,
 
         settingRow("◫", t("set.demoData"),
           demoCount
@@ -247,6 +252,32 @@ export function settingsView() {
             el("button", { class: "small-button danger", type: "button", text: t("set.clearDemo"), onclick: clearAll })
           ]))
       ].filter(Boolean)));
+  }
+
+  /* Real numbers from the browser, and whether it has promised to keep them. */
+  async function describeStorage(row) {
+    const [usage, persistence] = await Promise.all([persist.usage(), persist.requestPersistence()]);
+    const mb = (value) => `${(value / 1024 / 1024).toFixed(1)} МБ`;
+    const backend = persist.backend() === "indexeddb"
+      ? (ru() ? "IndexedDB — без ограничения в 5 МБ" : "IndexedDB — no 5 MB ceiling")
+      : (ru() ? "localStorage — потолок около 5 МБ" : "localStorage — about 5 MB");
+    const kept = persistence.persisted
+      ? (ru() ? "браузер обещал не удалять" : "browser will not evict it")
+      : persistence.supported
+        ? (ru() ? "браузер пока не гарантирует сохранность" : "browser has not guaranteed persistence yet")
+        : "";
+
+    const copy = row.querySelector(".setting-copy small");
+    if (copy) {
+      copy.textContent = usage
+        ? `${mb(usage.bytes)} ${t("app.of")} ${mb(usage.limit)} · ${backend}${kept ? ` · ${kept}` : ""}`
+        : backend;
+    }
+    const bar = row.querySelector(".usage-bar i");
+    if (bar && usage) {
+      bar.style.width = `${Math.max(1, Math.min(100, usage.percent))}%`;
+      bar.className = usage.percent > 80 ? "warn" : "";
+    }
   }
 
   async function downloadBackup() {
@@ -516,7 +547,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-081615");
+                       const suite = await import("../selftest.js?v=20260827-082424");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length
