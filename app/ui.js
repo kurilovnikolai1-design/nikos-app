@@ -5,7 +5,7 @@
    into the page behind an open form, and on a phone the background scrolled
    under it. One implementation here fixes all of that in one place. */
 
-import { t } from "./i18n.js?v=20260827-150530";
+import { t } from "./i18n.js?v=20260827-150820";
 
 export const $ = (selector, scope = document) => scope.querySelector(selector);
 export const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
@@ -130,12 +130,18 @@ export function openDialog({ title, subtitle = "", body, footer = null, size = "
 export const closeTopDialog = () => openDialogs.at(-1)?.close();
 export const hasOpenDialog = () => openDialogs.length > 0;
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && openDialogs.length) {
-    event.stopPropagation();
-    closeTopDialog();
-  }
-}, true);
+/* Guarded, because this runs the moment the module is imported. Without the
+   check, every module that merely wants `toast` becomes impossible to load
+   outside a browser — which is how a pure function ended up untestable and a
+   check had to be dropped instead of written. */
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && openDialogs.length) {
+      event.stopPropagation();
+      closeTopDialog();
+    }
+  }, true);
+}
 
 /* ---------- Confirm ---------- */
 

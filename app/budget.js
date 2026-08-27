@@ -19,7 +19,7 @@
  *   excluded and why; that count is carried through, because "осталось 40 000"
  *   is a different statement when three expenses were not counted. */
 
-import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260827-150530";
+import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260827-150820";
 
 export const BUDGET_STATE = {
   UNSET: "unset",

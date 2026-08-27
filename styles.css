@@ -1187,6 +1187,19 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .budget-committed b.positive { color: var(--good, #3e8e6e); }
 .budget-committed b.negative { color: var(--danger, #d9534f); }
 
+/* Year on year: the change is what matters, so it is the bold part. */
+.yoy-list { display: grid; gap: 8px; }
+.yoy-line {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.yoy-line span { flex: 1 1 auto; font-size: var(--step-sm); }
+.yoy-line b { font-variant-numeric: tabular-nums; font-weight: 700; }
+.yoy-line small { color: var(--faint); font-size: var(--step-xs); font-variant-numeric: tabular-nums; }
+.yoy-line.good b { color: var(--good, #3e8e6e); }
+.yoy-line.warn b { color: var(--warn); }
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }

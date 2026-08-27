@@ -5,9 +5,9 @@
    a month of income and expenses could be entered and the totals stayed empty
    because the default status excluded them. Nothing is dropped in silence now. */
 
-import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-150530";
-import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-150530";
-import { quoteFor } from "./quotes.js?v=20260827-150530";
+import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-150820";
+import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-150820";
+import { quoteFor } from "./quotes.js?v=20260827-150820";
 
 export const EXCLUSION = {
   UNCONFIRMED: "unconfirmed",
@@ -196,6 +196,36 @@ export function cashflow(records, base, rates, range) {
     byCategory: [...byCategory.entries()].sort((a, b) => b[1] - a[1]),
     excluded,
     excludedCount: Object.values(excluded).reduce((sum, list) => sum + list.length, 0)
+  };
+}
+
+/* The same month a year ago.
+ *
+ * A month on its own says nothing: 180 000 spent is a lot or a little
+ * depending on what the year before looked like. Comparing to the previous
+ * month compares August with July, which differ for reasons that have nothing
+ * to do with habits — holidays, insurance renewals, a quarter ending.
+ *
+ * Returns null rather than zero when there is no data from a year ago,
+ * because "-100%" against a month that was never recorded is a lie. */
+export function yearOverYear(records, base, rates, { offset = 0 } = {}) {
+  const now = cashflow(records, base, rates, periodRange("month", offset));
+  const then = cashflow(records, base, rates, periodRange("month", offset - 12));
+
+  if (!then.expenseRecords.length && !then.incomeRecords.length) {
+    return { now, then: null, comparable: false };
+  }
+
+  const change = (current, previous) => (previous > 0 ? ((current - previous) / previous) * 100 : null);
+
+  return {
+    now,
+    then,
+    comparable: true,
+    expenseChangePercent: change(now.expenseMinor, then.expenseMinor),
+    incomeChangePercent: change(now.incomeMinor, then.incomeMinor),
+    expenseDeltaMinor: now.expenseMinor - then.expenseMinor,
+    incomeDeltaMinor: now.incomeMinor - then.incomeMinor
   };
 }
 

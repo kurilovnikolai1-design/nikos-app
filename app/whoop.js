@@ -6,10 +6,10 @@
    a manual backfill. Nothing here can leak a credential, because nothing here
    ever sees one. */
 
-import { el, toast, confirmDialog } from "./ui.js?v=20260827-150530";
-import { t, getLocale, formatDate } from "./i18n.js?v=20260827-150530";
-import * as cloud from "./cloud.js?v=20260827-150530";
-import * as store from "./store.js?v=20260827-150530";
+import { el, toast, confirmDialog } from "./ui.js?v=20260827-150820";
+import { t, getLocale, formatDate } from "./i18n.js?v=20260827-150820";
+import * as cloud from "./cloud.js?v=20260827-150820";
+import * as store from "./store.js?v=20260827-150820";
 
 const ru = () => getLocale() === "ru";
 
@@ -160,3 +160,58 @@ export async function handleReturn(onChange) {
 }
 
 export const isConfigured = () => Boolean(cloud.functionsUrl("whoop")) && store.getState().ready;
+
+/* ---------- Keeping it current without being asked ---------- */
+
+/* WHOOP data arrived only when the owner pressed a button, which means the
+   health screen was as fresh as the last time he remembered to. A watch that
+   records every night is not much use behind a manual sync.
+ *
+ * Once a day is right: WHOOP publishes a night's recovery in the morning and
+ * nothing changes after that, so anything more often is traffic for its own
+ * sake. A shorter pull than the connect-time one — sixty pages is for the
+ * initial backfill, not for catching up on yesterday. */
+
+const LAST_SYNC_KEY = "nikos-whoop-synced-at";
+const EVERY_HOURS = 20;
+
+const lastSyncAt = () => {
+  try { return localStorage.getItem(LAST_SYNC_KEY) || ""; } catch { return ""; }
+};
+const markSynced = () => {
+  try { localStorage.setItem(LAST_SYNC_KEY, new Date().toISOString()); } catch { /* optional */ }
+};
+
+export const syncRecent = () => call("/sync?pages=3", { method: "POST" });
+
+export function isSyncDue({ now = Date.now(), everyHours = EVERY_HOURS } = {}) {
+  const last = Date.parse(lastSyncAt());
+  if (Number.isNaN(last)) return true;
+  return now - last >= everyHours * 3_600_000;
+}
+
+/* Returns what happened rather than announcing it: a background refresh that
+   raises a toast every morning is a background refresh people switch off. */
+export async function syncIfDue(onChange) {
+  if (!isConfigured() || !navigator.onLine || !isSyncDue()) return { ok: true, skipped: true };
+
+  const result = await syncRecent();
+  /* The stamp only moves on success, so a failed morning is retried rather
+     than silently skipped for a day. */
+  if (result.ok) {
+    markSynced();
+    if (result.body?.saved) {
+      await cloud.syncAll();
+      onChange?.();
+    }
+  }
+  return result;
+}
+
+export function watchWhoop(onChange) {
+  const run = () => { void syncIfDue(onChange); };
+  if (document.visibilityState === "visible") run();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") run(); });
+  window.addEventListener("online", run);
+  setInterval(run, 3 * 3_600_000);
+}

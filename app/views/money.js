@@ -1,22 +1,22 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-150530";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-150820";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-150530";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-150530";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-150530";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-150530";
-import { refreshRates } from "../main-rates.js?v=20260827-150530";
-import { openBankImport } from "../csv.js?v=20260827-150530";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-150530";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-150530";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-150530";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-150530";
-import { isVerified } from "../schema.js?v=20260827-150530";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-150530";
-import { openRecordForm } from "../form.js?v=20260827-150530";
-import * as store from "../store.js?v=20260827-150530";
-import * as records from "../records.js?v=20260827-150530";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-150820";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-150820";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear } from "../finance.js?v=20260827-150820";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-150820";
+import { refreshRates } from "../main-rates.js?v=20260827-150820";
+import { openBankImport } from "../csv.js?v=20260827-150820";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-150820";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-150820";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-150820";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-150820";
+import { isVerified } from "../schema.js?v=20260827-150820";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-150820";
+import { openRecordForm } from "../form.js?v=20260827-150820";
+import * as store from "../store.js?v=20260827-150820";
+import * as records from "../records.js?v=20260827-150820";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -497,6 +497,33 @@ export function cashflowView() {
   if (note) {
     page.append(el("div", { class: "note-row" }, [note,
       confirmPendingButton(flow.excluded.unconfirmed, ru() ? "Подтвердить и посчитать" : "Confirm and count")]));
+  }
+
+  /* The same month a year ago. Comparing with last month compares August with
+     July, which differ for reasons that are not habits. */
+  if (cashflowState.period === "month") {
+    const compared = yearOverYear(all, base(), store.getRates(), { offset: cashflowState.offset });
+    if (compared.comparable) {
+      const line = (label, deltaMinor, percent, goodWhenDown) => {
+        const better = goodWhenDown ? deltaMinor <= 0 : deltaMinor >= 0;
+        return el("div", { class: `yoy-line ${better ? "good" : "warn"}` }, [
+          el("span", { text: label }),
+          el("b", { text: `${deltaMinor > 0 ? "+" : ""}${money(deltaMinor)}` }),
+          el("small", { text: percent === null ? "" : `${percent > 0 ? "+" : ""}${percent.toFixed(0)}%` })
+        ]);
+      };
+
+      page.append(panel("records-panel yoy-panel",
+        panelHeader(ru() ? "ГОД НАЗАД" : "A YEAR AGO",
+          ru() ? `${money(compared.then.expenseMinor)} расходов в том же месяце` : `${money(compared.then.expenseMinor)} spent in the same month`),
+        el("div", { class: "yoy-list" }, [
+          line(ru() ? "Расходы" : "Spending", compared.expenseDeltaMinor, compared.expenseChangePercent, true),
+          line(ru() ? "Доходы" : "Income", compared.incomeDeltaMinor, compared.incomeChangePercent, false)
+        ]),
+        el("p", { class: "panel-note", text: ru()
+          ? "Сравнение с тем же месяцем прошлого года, а не с прошлым месяцем: соседние месяцы отличаются из-за отпусков и разовых платежей, а не из-за привычек."
+          : "Compared with the same month last year rather than last month: adjacent months differ for reasons that are not habits." })));
+    }
   }
 
   /* What leaves every month, itemised. The dashboard has shown the total
