@@ -192,3 +192,58 @@ export function analyteHistory(all, name) {
     .sort((a, b) => String(a.date).localeCompare(String(b.date)))
     .map((record) => ({ date: record.date, value: Number(record.value), record }));
 }
+
+/* ---------- Grouped by analyte, the way a laboratory presents it ---------- */
+
+/* The laboratory's own view is organised around the test, not the visit: open
+   ALT and see a decade of ALT. Grouping by sampling date instead made the same
+   analyte appear in sixteen panels, which reads as duplication. */
+export function byAnalyte(all) {
+  const groups = new Map();
+
+  for (const record of all) {
+    if (record.type !== "lab" || record.deletedAt) continue;
+    const key = String(record.name).trim().toLowerCase();
+    if (!groups.has(key)) groups.set(key, { name: String(record.name).trim(), category: record.category, history: [] });
+    groups.get(key).history.push(record);
+  }
+
+  const result = [];
+  for (const group of groups.values()) {
+    group.history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+    const latest = group.history.at(-1);
+    const previous = group.history.length > 1 ? group.history.at(-2) : null;
+
+    /* Units change over the years — KDL itself draws a separate chart when
+       they do. A trend line is only drawn across readings that share a unit. */
+    const units = [...new Set(group.history.map((item) => item.unit || "").filter(Boolean))];
+    const comparable = group.history.filter((item) => (item.unit || "") === (latest.unit || ""));
+
+    result.push({
+      ...group,
+      latest,
+      previous,
+      verdict: rangeVerdict(latest),
+      units,
+      unitChanged: units.length > 1,
+      comparable,
+      count: group.history.length,
+      delta: previous && (previous.unit || "") === (latest.unit || "")
+        ? Number(latest.value) - Number(previous.value)
+        : null
+    });
+  }
+
+  const rank = { above: 0, below: 0 };
+  return result.sort((a, b) => {
+    const aFlag = a.verdict in rank ? 0 : 1;
+    const bFlag = b.verdict in rank ? 0 : 1;
+    if (aFlag !== bFlag) return aFlag - bFlag;
+    return a.name.localeCompare(b.name, "ru");
+  });
+}
+
+/* Only the current state of each analyte, so one long-standing deviation is
+   listed once rather than once per visit. */
+export const currentlyOutOfRange = (all) =>
+  byAnalyte(all).filter((group) => group.verdict === "above" || group.verdict === "below");

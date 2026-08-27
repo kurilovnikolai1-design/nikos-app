@@ -725,6 +725,79 @@ button.metric-card:hover { border-color: var(--border-strong); }
   .day-chip small { font-size: 11px; }
 }
 
+/* ------------------------------------------------------------- analytes */
+
+/* The laboratory's own organising idea: one row per test, its history inside.
+   Grouping by visit instead made the same analyte appear in sixteen panels. */
+.lab-toolbar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.lab-toolbar .form-control { flex: 1; min-width: 200px; }
+
+.analyte-list { display: grid; gap: 2px; }
+
+.analyte-row {
+  display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(60px, 110px) auto auto;
+  align-items: center; gap: 14px;
+  width: 100%; min-height: 56px; padding: 10px 12px;
+  border-radius: var(--radius-sm); text-align: left; color: var(--text);
+  border-left: 2px solid transparent;
+}
+.analyte-row:hover { background: var(--surface-2); }
+.analyte-row.above { border-left-color: var(--red); }
+.analyte-row.below { border-left-color: var(--cyan); }
+
+.analyte-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.analyte-name strong { font-size: var(--step-sm); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analyte-name small { color: var(--faint); font-size: var(--step-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.analyte-row .sparkline { height: 28px; }
+.analyte-nochart { display: block; }
+
+.analyte-value { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.analyte-value b { font: 500 var(--step-sm)/1 var(--mono); white-space: nowrap; }
+.analyte-value small { color: var(--faint); font-size: var(--step-xs); white-space: nowrap; }
+.analyte-row.off .analyte-value b { color: var(--amber); }
+
+.analyte-ref { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.analyte-ref small { color: var(--faint); font: 400 var(--step-xs)/1 var(--mono); white-space: nowrap; }
+.analyte-ref em { color: var(--amber); font-size: var(--step-xs); font-style: normal; white-space: nowrap; }
+
+/* The detail view */
+.analyte-detail { display: grid; gap: 16px; padding-bottom: 8px; }
+.analyte-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr)); gap: 12px; }
+.analyte-summary > div {
+  display: grid; gap: 3px; padding: 13px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
+}
+.analyte-summary strong { font-size: var(--step-lg); font-weight: 700; letter-spacing: -.02em; }
+.analyte-summary small { color: var(--faint); font-size: var(--step-xs); }
+
+.analyte-chart {
+  display: grid; gap: 6px; padding: 14px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
+}
+.analyte-chart .sparkline { height: 90px; }
+
+.analyte-history { display: grid; gap: 1px; }
+.analyte-reading {
+  display: grid; grid-template-columns: 14px minmax(90px, auto) minmax(0, 1fr) auto auto;
+  align-items: center; gap: 12px; padding: 9px 6px; border-radius: 7px;
+}
+.analyte-reading:hover { background: var(--surface-2); }
+.reading-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.analyte-reading.above .reading-dot { background: var(--red); }
+.analyte-reading.below .reading-dot { background: var(--cyan); }
+.analyte-reading time { color: var(--muted); font: 400 var(--step-xs)/1 var(--mono); white-space: nowrap; }
+.analyte-reading b { font: 500 var(--step-sm)/1 var(--mono); }
+.analyte-reading small { color: var(--faint); font: 400 var(--step-xs)/1 var(--mono); text-align: right; white-space: nowrap; }
+.analyte-reading em { color: var(--amber); font-size: var(--step-xs); font-style: normal; white-space: nowrap; }
+
+@media (max-width: 900px) {
+  .analyte-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; }
+  .analyte-row .sparkline, .analyte-nochart { grid-column: 1 / -1; }
+  .analyte-ref { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; }
+  .analyte-reading { grid-template-columns: 14px minmax(0, 1fr) auto; row-gap: 4px; }
+  .analyte-reading small, .analyte-reading em { grid-column: 2 / -1; text-align: left; }
+}
+
 /* ---------------------------------------------------------------- labs */
 
 .lab-paste-body { display: grid; gap: 14px; padding-bottom: 8px; }

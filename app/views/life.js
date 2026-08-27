@@ -1,19 +1,20 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-085213";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-090330";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-085213";
-import { formatMoney } from "../money.js?v=20260827-085213";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-085213";
-import { categoriesOf } from "../schema.js?v=20260827-085213";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-085213";
-import { openRecordForm } from "../form.js?v=20260827-085213";
-import { importCsv } from "../csv.js?v=20260827-085213";
-import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-085213";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-085213";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-085213";
-import * as store from "../store.js?v=20260827-085213";
-import * as records from "../records.js?v=20260827-085213";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-090330";
+import { formatMoney } from "../money.js?v=20260827-090330";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-090330";
+import { categoriesOf } from "../schema.js?v=20260827-090330";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-090330";
+import { openRecordForm } from "../form.js?v=20260827-090330";
+import { importCsv } from "../csv.js?v=20260827-090330";
+import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-090330";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-090330";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-090330";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-090330";
+import * as store from "../store.js?v=20260827-090330";
+import * as records from "../records.js?v=20260827-090330";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -65,7 +66,8 @@ export function assetsView() {
 
 /* ---------- Health & sport ---------- */
 
-const healthState = { tab: "overview", days: 30, expandedDay: null, showRaw: false };
+const healthState = { tab: "overview", days: 30, expandedDay: null, showRaw: false,
+                      labQuery: "", labPanel: "all", labOnlyOff: false };
 
 const DAY_LENGTHS = [
   { value: 7, key: "health.week7" },
@@ -81,8 +83,8 @@ export function healthView() {
   const measurements = store.recordsOfType("measurement");
   const healthRecords = store.recordsOfType("health");
   const labs = store.recordsOfType("lab");
-  const panels = labPanels(labs);
-  const flagged = panels.flatMap((panel) => panel.outOfRange);
+  // Each analyte counted once, at its current state — not once per visit.
+  const flagged = currentlyOutOfRange(all);
 
   const page = document.createDocumentFragment();
 
@@ -212,8 +214,7 @@ export function healthView() {
       host.append(panel("records-panel lab-flagged",
         panelHeader(ru() ? "ВНЕ НОРМЫ" : "OUT OF RANGE", ru() ? "Из последних анализов" : "From recent lab results",
           el("span", { class: "security-badge", text: String(flagged.length) })),
-        el("div", { class: "lab-table" }, flagged
-          .sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 6).map(labLine)),
+        el("div", { class: "analyte-list" }, flagged.slice(0, 6).map(analyteRow)),
         el("p", { class: "panel-note", text: t("health.notDiagnosis") })));
     }
 
@@ -306,8 +307,12 @@ export function healthView() {
     return host;
   }
 
+  /* ---------- Lab results, organised by analyte ---------- */
+
   function labsPanel() {
-    if (!panels.length) {
+    const groups = byAnalyte(all);
+
+    if (!groups.length) {
       return panel("records-panel",
         panelHeader(ru() ? "АНАЛИЗЫ" : "LAB RESULTS", ru() ? "Результаты из лаборатории" : "Results from the laboratory"),
         emptyState(ru()
@@ -316,53 +321,189 @@ export function healthView() {
           t("health.pasteLab"), () => openLabPaste({ onDone: refresh })));
     }
 
+    const query = healthState.labQuery.trim().toLowerCase();
+    const filtered = groups.filter((group) => {
+      if (healthState.labPanel !== "all" && group.category !== healthState.labPanel) return false;
+      if (healthState.labOnlyOff && !["above", "below"].includes(group.verdict)) return false;
+      return !query || group.name.toLowerCase().includes(query);
+    });
+
+    const offCount = groups.filter((group) => ["above", "below"].includes(group.verdict)).length;
+    const dates = [...new Set(all.filter((r) => r.type === "lab" && r.date).map((r) => r.date))];
+
     const host = document.createDocumentFragment();
-    if (flagged.length) {
-      host.append(panel("records-panel lab-flagged",
-        panelHeader(ru() ? "ВНЕ НОРМЫ" : "OUT OF RANGE", ru() ? "На что посмотреть с врачом" : "Worth reviewing with a doctor",
-          el("span", { class: "security-badge", text: String(flagged.length) })),
-        el("div", { class: "lab-table" }, flagged
-          .sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 12).map(labLine)),
-        el("p", { class: "panel-note", text: t("health.notDiagnosis") })));
-    }
-    for (const group of panels.slice(0, 8)) {
-      host.append(panel("records-panel",
-        panelHeader(formatDate(group.date, "long").toUpperCase(),
-          group.lab || (ru() ? "Лаборатория не указана" : "Laboratory not recorded"),
-          el("span", { class: "muted-text", text: group.outOfRange.length
-            ? `${group.outOfRange.length} ${t("health.outOfRange")}` : t("health.inRange") })),
-        el("div", { class: "lab-table" }, group.items.map(labLine))));
-    }
+
+    host.append(el("div", { class: "metric-grid" }, [
+      metricCard({ kicker: ru() ? "ПОКАЗАТЕЛЕЙ" : "ANALYTES", value: String(groups.length),
+                   note: ru()
+                     ? `${dates.length} ${plural(dates.length, { ru: { one: "сдача", few: "сдачи", many: "сдач", other: "сдачи" }, en: { one: "visit", other: "visits" } })}`
+                     : `${dates.length} visits` }),
+      metricCard({ kicker: ru() ? "СЕЙЧАС ВНЕ НОРМЫ" : "OUT OF RANGE NOW", value: String(offCount),
+                   note: ru() ? "по последней сдаче" : "at the latest reading",
+                   tone: offCount ? "negative" : "positive" }),
+      metricCard({ kicker: ru() ? "С ИСТОРИЕЙ" : "WITH HISTORY",
+                   value: String(groups.filter((group) => group.count > 1).length),
+                   note: ru() ? "можно смотреть динамику" : "trend available" })
+    ]));
+
+    const search = el("input", {
+      class: "form-control", type: "search", value: healthState.labQuery,
+      placeholder: ru() ? "Найти показатель — гемоглобин, ферритин…" : "Find an analyte…",
+      oninput: (event) => { healthState.labQuery = event.target.value; renderList(); }
+    });
+
+    const usedPanels = [...new Set(groups.map((group) => group.category))];
+    const chips = chipRow([
+      { value: "all", label: t("app.all"), count: groups.length },
+      ...usedPanels.map((key) => ({
+        value: key, label: categoryLabel("lab", key),
+        count: groups.filter((group) => group.category === key).length
+      }))
+    ], healthState.labPanel, (value) => { healthState.labPanel = value; refresh(); });
+
+    const onlyOff = el("label", { class: "switch-row" }, [
+      el("input", {
+        type: "checkbox", checked: healthState.labOnlyOff ? "checked" : null,
+        onchange: (event) => { healthState.labOnlyOff = event.target.checked; refresh(); }
+      }),
+      el("span", { text: ru() ? `Только вне нормы (${offCount})` : `Only out of range (${offCount})` })
+    ]);
+
+    const list = el("div", { class: "analyte-list" });
+    const renderList = () => {
+      const q = healthState.labQuery.trim().toLowerCase();
+      const shown = groups.filter((group) => {
+        if (healthState.labPanel !== "all" && group.category !== healthState.labPanel) return false;
+        if (healthState.labOnlyOff && !["above", "below"].includes(group.verdict)) return false;
+        return !q || group.name.toLowerCase().includes(q);
+      });
+      list.replaceChildren(...(shown.length
+        ? shown.map(analyteRow)
+        : [emptyState(ru() ? "Ничего не нашлось." : "Nothing found.")]));
+    };
+
+    host.append(panel("records-panel",
+      panelHeader(ru() ? "ПОКАЗАТЕЛИ" : "ANALYTES",
+        ru() ? "Нажмите, чтобы увидеть всю историю" : "Open one to see its whole history"),
+      el("div", { class: "lab-toolbar" }, [search, onlyOff]),
+      chips,
+      list,
+      el("p", { class: "panel-note", text: t("health.notDiagnosis") })));
+
+    renderList();
+    host.querySelector(".analyte-list") && list.replaceChildren(...filtered.map(analyteRow));
     return host;
   }
 
-  function labLine(record) {
-    const verdict = rangeVerdict(record);
-    const history = analyteHistory(all, record.name);
-    const index = history.findIndex((item) => item.record.id === record.id);
-    const previous = index > 0 ? history[index - 1] : null;
-    const delta = previous ? Number(record.value) - previous.value : null;
+  /* A one-sided range reads as "до 50", not "— – 50". */
+  function rangeText(record) {
+    const low = record.refLow;
+    const high = record.refHigh;
+    if (low !== null && low !== undefined && high !== null && high !== undefined) {
+      return `${formatNumber(low, 2)} – ${formatNumber(high, 2)}`;
+    }
+    if (high !== null && high !== undefined) return `${ru() ? "до" : "up to"} ${formatNumber(high, 2)}`;
+    if (low !== null && low !== undefined) return `${ru() ? "от" : "from"} ${formatNumber(low, 2)}`;
+    return null;
+  }
+
+  /* One line per analyte: where it stands now, and where it has been. */
+  function analyteRow(group) {
+    const off = ["above", "below"].includes(group.verdict);
+    const unit = group.latest.unit ? ` ${group.latest.unit}` : "";
+    const range = rangeText(group.latest);
 
     return el("button", {
-      class: `lab-line${verdict && verdict !== "in" ? ` off ${verdict}` : ""}`, type: "button",
-      onclick: () => openRecordForm("lab", record, { onSaved: refresh })
+      class: `analyte-row${off ? ` off ${group.verdict}` : ""}`, type: "button",
+      onclick: () => openAnalyte(group)
     }, [
-      el("span", { class: "lab-line-name" }, [
-        el("strong", { text: record.name }),
-        el("small", { text: [categoryLabel("lab", record.category), record.counterparty].filter(Boolean).join(" · ") })
+      el("span", { class: "analyte-name" }, [
+        el("strong", { text: group.name }),
+        el("small", { text: [categoryLabel("lab", group.category),
+          `${group.count} ${plural(group.count, { ru: { one: "измерение", few: "измерения", many: "измерений", other: "измерения" }, en: { one: "reading", other: "readings" } })}`
+        ].join(" · ") })
       ]),
-      history.length > 1 ? sparkline(history.slice(-12), { tone: verdict && verdict !== "in" ? "amber" : "cyan" }) : null,
-      el("span", { class: "lab-line-value" }, [
-        el("b", { text: `${formatNumber(record.value, 2)}${record.unit ? ` ${record.unit}` : ""}` }),
-        delta !== null && Math.abs(delta) > 1e-9
-          ? el("small", { class: "lab-delta", text: `${delta > 0 ? "+" : ""}${formatNumber(delta, 2)}` }) : null
+      group.comparable.length > 1
+        ? sparkline(group.comparable.map((item) => ({ date: item.date, value: Number(item.value) })),
+                    { tone: off ? "amber" : "cyan" })
+        : el("span", { class: "analyte-nochart" }),
+      el("span", { class: "analyte-value" }, [
+        el("b", { text: `${formatNumber(group.latest.value, 2)}${unit}` }),
+        el("small", { text: formatDate(group.latest.date, "short") })
       ]),
-      el("span", { class: "lab-line-ref" }, [
-        el("small", { text: record.refLow !== null || record.refHigh !== null
-          ? `${record.refLow ?? "—"} – ${record.refHigh ?? "—"}` : "—" }),
-        verdict && verdict !== "in" ? el("em", { text: verdictLabel(verdict) }) : null
+      el("span", { class: "analyte-ref" }, [
+        range ? el("small", { text: range }) : el("small", { class: "muted-text", text: ru() ? "нормы нет" : "no range" }),
+        off ? el("em", { text: verdictLabel(group.verdict) }) : null
       ])
     ]);
+  }
+
+  /* The laboratory's own detail view: the whole history as a chart and a list. */
+  function openAnalyte(group) {
+    const body = el("div", { class: "analyte-detail" });
+    const latest = group.latest;
+
+    const header = el("div", { class: "analyte-summary" }, [
+      el("div", {}, [
+        el("span", { class: "panel-kicker", text: ru() ? "ПОСЛЕДНЕЕ" : "LATEST" }),
+        el("strong", { text: `${formatNumber(latest.value, 2)}${latest.unit ? ` ${latest.unit}` : ""}` }),
+        el("small", { text: formatDate(latest.date, "long") })
+      ]),
+      el("div", {}, [
+        el("span", { class: "panel-kicker", text: ru() ? "НОРМА ЛАБОРАТОРИИ" : "LAB RANGE" }),
+        el("strong", { text: rangeText(latest) ?? (ru() ? "не указана" : "not given") }),
+        el("small", { text: group.verdict && group.verdict !== "in" ? verdictLabel(group.verdict) : (group.verdict === "in" ? t("health.inRange") : "") })
+      ]),
+      el("div", {}, [
+        el("span", { class: "panel-kicker", text: ru() ? "ИЗМЕРЕНИЙ" : "READINGS" }),
+        el("strong", { text: String(group.count) }),
+        el("small", { text: `${formatDate(group.history[0].date, "medium")} — ${formatDate(latest.date, "medium")}` })
+      ])
+    ]);
+    body.append(header);
+
+    /* Units changed over the years for some tests; a line across them would be
+       meaningless, so each unit gets its own chart — as the laboratory does. */
+    const byUnit = new Map();
+    for (const item of group.history) {
+      const unit = item.unit || "";
+      if (!byUnit.has(unit)) byUnit.set(unit, []);
+      byUnit.get(unit).push(item);
+    }
+
+    for (const [unit, items] of byUnit) {
+      if (items.length < 2) continue;
+      body.append(el("div", { class: "analyte-chart" }, [
+        byUnit.size > 1 ? el("span", { class: "panel-kicker", text: unit || (ru() ? "без единицы" : "no unit") }) : null,
+        sparkline(items.map((item) => ({ date: item.date, value: Number(item.value) })),
+                  { tone: ["above", "below"].includes(group.verdict) ? "amber" : "cyan", height: 90 })
+      ]));
+    }
+
+    if (group.unitChanged) {
+      body.append(el("p", { class: "panel-note warn", text: ru()
+        ? `Лаборатория меняла единицы измерения (${group.units.join(", ")}), поэтому история разбита на отдельные графики.`
+        : `The laboratory changed units (${group.units.join(", ")}), so the history is split into separate charts.` }));
+    }
+
+    body.append(el("div", { class: "analyte-history" }, [...group.history].reverse().map((item) => {
+      const verdict = rangeVerdict(item);
+      return el("div", { class: `analyte-reading${verdict && verdict !== "in" ? ` off ${verdict}` : ""}` }, [
+        el("span", { class: "reading-dot", "aria-hidden": "true" }),
+        el("time", { datetime: item.date, text: formatDate(item.date, "medium") }),
+        el("b", { text: `${formatNumber(item.value, 2)}${item.unit ? ` ${item.unit}` : ""}` }),
+        el("small", { text: rangeText(item) ?? "—" }),
+        verdict && verdict !== "in" ? el("em", { text: verdictLabel(verdict) }) : null
+      ]);
+    })));
+
+    openDialog({
+      title: group.name,
+      subtitle: [categoryLabel("lab", group.category), latest.counterparty].filter(Boolean).join(" · "),
+      size: "form",
+      body,
+      footer: el("p", { class: "panel-note", text: t("health.notDiagnosis") })
+    });
   }
 }
 
