@@ -783,6 +783,80 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .analyte-summary strong { font-size: var(--step-lg); font-weight: 700; letter-spacing: -.02em; }
 .analyte-summary small { color: var(--faint); font-size: var(--step-xs); }
 
+/* Which specialty reads this test, and what the test is. Both sit directly
+   under the numbers, because that is the order the questions arrive in:
+   what is it, then who do I take it to. */
+.analyte-route {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.analyte-route .panel-kicker { flex-basis: 100%; }
+.analyte-route strong { font-size: var(--step-md); }
+.analyte-route small { color: var(--faint); font-size: var(--step-xs); }
+
+.analyte-about { display: grid; gap: 6px; }
+.analyte-about p {
+  margin: 0; color: var(--muted); font-size: var(--step-sm); line-height: 1.55;
+}
+.analyte-about cite {
+  font-style: normal; color: var(--faint); font-size: var(--step-xs);
+}
+
+/* Deviations grouped into appointments rather than listed as a wall. */
+.routing-list { display: grid; gap: 14px; }
+.routing-item {
+  display: grid; gap: 8px; padding: 14px;
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.routing-head { display: grid; gap: 2px; }
+.routing-head strong { font-size: var(--step-md); }
+.routing-head small { color: var(--faint); font-size: var(--step-xs); }
+.routing-analytes { display: flex; flex-wrap: wrap; gap: 8px; }
+.routing-analytes .chip {
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font-size: var(--step-xs); font-weight: 600;
+  background: var(--surface); color: var(--text);
+  cursor: pointer; text-align: left; line-height: 1.3;
+}
+.routing-analytes .chip:hover { border-color: var(--accent); }
+.routing-analytes .chip.above,
+.routing-analytes .chip.below {
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+
+/* A condition and the tests that travel with it. The row is a button because
+   every one of them opens the full history of that analyte. */
+.condition-tracked { display: grid; gap: 2px; }
+.condition-row {
+  display: grid; align-items: baseline; gap: 4px 12px;
+  grid-template-columns: minmax(0, 1.4fr) auto minmax(0, auto);
+  padding: 10px 12px; border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text); text-align: left;
+  font-size: var(--step-sm); cursor: pointer;
+}
+.condition-row:hover { background: var(--surface-2); }
+.condition-label { color: var(--muted); min-width: 0; }
+.condition-row b { font-variant-numeric: tabular-nums; font-weight: 700; }
+.condition-row time { color: var(--faint); font-size: var(--step-xs); font-variant-numeric: tabular-nums; }
+.condition-row em {
+  grid-column: 1 / -1; font-style: normal;
+  color: var(--warn); font-size: var(--step-xs); font-weight: 600;
+}
+.condition-row.overdue { background: color-mix(in srgb, var(--warn) 7%, transparent); }
+.security-badge.warn {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+}
+
+@media (max-width: 520px) {
+  .condition-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .condition-row time { grid-column: 1 / -1; }
+}
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

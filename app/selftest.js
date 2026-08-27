@@ -2,14 +2,17 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-092919";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-092919";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-092919";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-092919";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-092919";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-092919";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-092919";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-092919";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-100955";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-100955";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-100955";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-100955";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-100955";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-100955";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-100955";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-100955";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-100955";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-100955";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-100955";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -202,6 +205,57 @@ check("ниже нормы", rangeVerdict(analyte("Витамин D (25-OH)")) =
 check("в норме", rangeVerdict(analyte("Гемоглобин")) === "in");
 check("без нормы — без вердикта", rangeVerdict({ value: 5, refLow: null, refHigh: null }) === null);
 check("граница нормы считается нормой", rangeVerdict({ value: 160, refLow: 130, refHigh: 160 }) === "in");
+
+/* ---------- Which door to knock on ---------- */
+
+/* Routing must stay administrative. These check that a name lands in the
+   right specialty, and — the one that matters — that an unknown name returns
+   nothing rather than being guessed into a plausible-looking answer. */
+check("ферритин -> гематолог", routeFor("Ферритин")?.key === "haematologist");
+check("креатинин -> нефролог", routeFor("Креатинин (метод Яффе)")?.key === "nephrologist");
+check("ЛПНП -> кардиолог", routeFor("Холестерин липопротеидов низкой плотности (ЛПНП, LDL)")?.key === "cardiologist");
+check("ТТГ -> эндокринолог", routeFor("Тиреотропный гормон (ТТГ)")?.key === "endocrinologist");
+check("выдуманный показатель -> без маршрута", routeFor("Показатель которого нет") === null,
+      "неизвестное имя не должно получать правдоподобный маршрут");
+
+const routed = groupBySpecialist([
+  { name: "Ферритин" }, { name: "Железо" }, { name: "Креатинин" }
+]);
+check("один приём на систему", routed.length === 2, `получилось ${routed.length} групп вместо 2`);
+check("группы отсортированы по размеру", routed[0].analytes.length === 2);
+
+/* ---------- The laboratory's own words ---------- */
+check("описание ферритина есть", (describeAnalyte("Ферритин") || "").includes("депонирования железа"));
+check("описание наследуется вариантом имени",
+      describeAnalyte("Билирубин общий (BIL)") === describeAnalyte("Билирубин общий"));
+check("нет описания -> null, а не выдумка", describeAnalyte("Показатель которого нет") === null);
+
+/* ---------- Conditions ---------- */
+
+/* The rule that matters: a condition exists only because the owner wrote it
+   down. A ferritin result, however high, must never conjure one. */
+const ironOnly = [
+  { id: "l1", type: "lab", name: "Ферритин", value: 900, unit: "мкг/л", refHigh: 400, date: "2026-04-21" }
+];
+check("диагноз не выводится из анализа", knownConditions(ironOnly).length === 0,
+      "состояние может появиться только из записи владельца");
+
+const declared = [
+  ...ironOnly,
+  { id: "l2", type: "lab", name: "Коэффициент насыщения трансферрина", value: 31, unit: "%", date: "2024-05-20" },
+  { id: "h1", type: "health", category: "condition", name: "Гемохроматоз", owner: "me" },
+  { id: "h2", type: "health", category: "condition", name: "Гемохроматоз", owner: "family" }
+];
+const [panelFor] = conditionPanels(declared, { locale: "ru", now: Date.parse("2026-08-27") });
+check("состояние читается из записи", panelFor?.key === "haemochromatosis");
+check("наследственное помечено", panelFor?.hereditary === true);
+check("одно состояние на несколько человек", panelFor?.owners.length === 2,
+      `владельцев: ${panelFor?.owners.length}`);
+check("просрочка считается по календарю",
+      panelFor?.tracked.find((item) => item.label === "Насыщение трансферрина")?.overdue === true);
+check("свежий показатель не просрочен",
+      panelFor?.tracked.find((item) => item.label === "Ферритин")?.overdue === false);
+check("несданное попадает в missing", panelFor?.missing.includes("АЛТ"));
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

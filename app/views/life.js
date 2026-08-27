@@ -1,22 +1,25 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-092919";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-100955";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-092919";
-import { formatMoney } from "../money.js?v=20260827-092919";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-092919";
-import { categoriesOf } from "../schema.js?v=20260827-092919";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-092919";
-import { openRecordForm } from "../form.js?v=20260827-092919";
-import { navigate } from "../router.js?v=20260827-092919";
-import { importCsv } from "../csv.js?v=20260827-092919";
-import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-092919";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-092919";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-092919";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-092919";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-092919";
-import * as store from "../store.js?v=20260827-092919";
-import * as records from "../records.js?v=20260827-092919";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-100955";
+import { formatMoney } from "../money.js?v=20260827-100955";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-100955";
+import { categoriesOf } from "../schema.js?v=20260827-100955";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-100955";
+import { openRecordForm } from "../form.js?v=20260827-100955";
+import { navigate } from "../router.js?v=20260827-100955";
+import { importCsv } from "../csv.js?v=20260827-100955";
+import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-100955";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-100955";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-100955";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-100955";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-100955";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-100955";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-100955";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-100955";
+import * as store from "../store.js?v=20260827-100955";
+import * as records from "../records.js?v=20260827-100955";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -376,6 +379,31 @@ export function labsView() {
 
     const host = document.createDocumentFragment();
 
+    host.append(conditionsPanel());
+
+    /* Nine deviations read as nine problems. Grouped by who reads them they
+       read as three appointments, which is what they actually are. */
+    const off = groups.filter((group) => ["above", "below"].includes(group.verdict));
+    if (off.length) {
+      const buckets = groupBySpecialist(off, getLocale());
+      host.append(panel("records-panel routing-panel",
+        panelHeader(ru() ? "К КОМУ ИДТИ" : "WHO TO SEE",
+          ru() ? `${off.length} ${plural(off.length, PLURALS.analyte)} вне нормы` : `${off.length} analytes outside the range`,
+          el("span", { class: "security-badge", text: String(buckets.length) })),
+        el("div", { class: "routing-list" }, buckets.map((bucket) => el("div", { class: "routing-item" }, [
+          el("div", { class: "routing-head" }, [
+            el("strong", { text: bucket.specialist }),
+            el("small", { text: bucket.systems.join(" · ") })
+          ]),
+          el("div", { class: "routing-analytes" }, bucket.analytes.map((group) => el("button", {
+            class: `chip ${group.verdict}`, type: "button",
+            text: `${group.name} · ${formatNumber(group.latest.value, 2)}${group.unit ? ` ${group.unit}` : ""}`,
+            onclick: () => openAnalyte(group)
+          })))
+        ]))),
+        el("p", { class: "panel-note", text: ru() ? ROUTING_NOTE.ru : ROUTING_NOTE.en }));
+    }
+
     const observations = labInsights(all, { locale: getLocale() });
     if (observations.length) {
       host.append(panel("insight-panel",
@@ -499,6 +527,67 @@ export function labsView() {
     ]);
   }
 
+  /* What is tracked alongside a condition the owner has written down.
+     Conditions are never inferred from results — only read from his own
+     records — and the only judgement made here is about the calendar. */
+  function conditionsPanel() {
+    const panels = conditionPanels(all, { locale: getLocale() });
+
+    if (!panels.length) {
+      const offers = offerableConditions(all, getLocale()).slice(0, 6);
+      return panel("records-panel conditions-panel",
+        panelHeader(ru() ? "ВАШИ СОСТОЯНИЯ" : "YOUR CONDITIONS",
+          ru() ? "Чтобы видеть, что по ним отслеживают" : "To see what is tracked for them"),
+        el("p", { class: "panel-note", text: ru()
+          ? "Отметьте, что у вас есть — Nik'Os покажет, какие показатели при этом обычно смотрят и когда вы сдавали их в последний раз."
+          : "Mark what you have and Nik'Os will show which analytes are usually tracked and when you last had them done." }),
+        el("div", { class: "routing-analytes" }, offers.map((offer) => el("button", {
+          class: "chip", type: "button", text: `＋ ${offer.name}`,
+          onclick: () => openRecordForm("health", null, {
+            presets: { category: "condition", name: offer.name, status: "active" },
+            onSaved: refresh
+          })
+        }))));
+    }
+
+    const host = document.createDocumentFragment();
+    for (const item of panels) {
+      host.append(panel("records-panel conditions-panel",
+        panelHeader(item.name.toUpperCase(),
+          item.hereditary && item.owners.length > 1
+            ? `${item.specialist} · ${ru() ? "в семье" : "in the family"}: ${item.owners.map((owner) => ownerLabel(owner)).join(", ")}`
+            : item.specialist,
+          item.overdueCount
+            ? el("span", { class: "security-badge warn", text: String(item.overdueCount) })
+            : null),
+        el("div", { class: "condition-tracked" }, item.tracked.map((entry) => el("button", {
+          class: `condition-row${entry.overdue ? " overdue" : ""}`, type: "button",
+          onclick: () => openAnalyte(entry.group)
+        }, [
+          el("span", { class: "condition-label", text: entry.label }),
+          el("b", { text: `${formatNumber(entry.value, 2)}${entry.unit ? ` ${entry.unit}` : ""}` }),
+          el("time", { datetime: entry.date, text: formatDate(entry.date, "medium") }),
+          entry.overdue
+            ? el("em", { text: ru()
+                ? `${Math.round(entry.days / 30)} мес. назад`
+                : `${Math.round(entry.days / 30)} months ago` })
+            : null
+        ]))),
+        item.missing.length
+          ? el("p", { class: "panel-note", text: ru()
+              ? `Ни разу не сдавали: ${item.missing.join(", ")}.`
+              : `Never taken: ${item.missing.join(", ")}.` })
+          : null,
+        item.hereditary
+          ? el("p", { class: "panel-note", text: ru()
+              ? "Состояние наследственное. Ниже — только ваши собственные результаты; у родственников свои анализы и свой график наблюдения."
+              : "This condition is hereditary. The results below are yours alone; relatives have their own tests and their own schedule." })
+          : null,
+        el("p", { class: "panel-note", text: ru() ? CONDITION_NOTE.ru : CONDITION_NOTE.en })));
+    }
+    return host;
+  }
+
   /* The laboratory's own detail view: the whole history as a chart and a list. */
   function openAnalyte(group) {
     const body = el("div", { class: "analyte-detail" });
@@ -522,6 +611,28 @@ export function labsView() {
       ])
     ]);
     body.append(header);
+
+    /* Which specialty this belongs to. Administrative, not diagnostic — it
+       answers "which door", never "what does my number mean". */
+    const route = routeFor(group.name, getLocale());
+    if (route) {
+      body.append(el("div", { class: "analyte-route" }, [
+        el("span", { class: "panel-kicker", text: ru() ? "ОБЫЧНО СМОТРИТ" : "USUALLY READ BY" }),
+        el("strong", { text: route.specialist }),
+        el("small", { text: route.system })
+      ]));
+    }
+
+    /* What the test measures, in the laboratory's own words. Absent for the
+       tests KDL itself does not describe — then nothing is shown. */
+    const description = describeAnalyte(group.name);
+    if (description) {
+      body.append(el("div", { class: "analyte-about" }, [
+        el("span", { class: "panel-kicker", text: ru() ? "ЧТО ЭТО ЗА АНАЛИЗ" : "WHAT THIS TEST IS" }),
+        el("p", { text: description }),
+        el("cite", { text: ru() ? DESC_SOURCE.ru : DESC_SOURCE.en })
+      ]));
+    }
 
     /* Units changed over the years for some tests; a line across them would be
        meaningless, so each unit gets its own chart — as the laboratory does. */

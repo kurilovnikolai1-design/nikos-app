@@ -198,11 +198,16 @@ export function analyteHistory(all, name) {
 /* The laboratory's own view is organised around the test, not the visit: open
    ALT and see a decade of ALT. Grouping by sampling date instead made the same
    analyte appear in sixteen panels, which reads as duplication. */
+/* A results table sometimes carries a heading row that is not a test at all —
+   "Интерпретация результатов:" and the like. It has no value to track. */
+const NOT_AN_ANALYTE = /^(интерпретация|комментарий|заключение|примечание|результат|см\.|описание)/i;
+
 export function byAnalyte(all) {
   const groups = new Map();
 
   for (const record of all) {
     if (record.type !== "lab" || record.deletedAt) continue;
+    if (NOT_AN_ANALYTE.test(String(record.name).trim())) continue;
     const key = String(record.name).trim().toLowerCase();
     if (!groups.has(key)) groups.set(key, { name: String(record.name).trim(), category: record.category, history: [] });
     groups.get(key).history.push(record);
