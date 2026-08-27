@@ -91,6 +91,7 @@ Object.assign(ru, {
 Object.assign(ru, { "Health, routines, signals": "Здоровье, режимы и сигналы", "HEALTH · ROUTINES · SIGNALS": "ЗДОРОВЬЕ · РЕЖИМЫ · СИГНАЛЫ", "Keep health context visible without turning Nik'Os into a medical system.": "Держите контекст здоровья перед глазами, не превращая Nik'Os в медицинскую систему.", "＋ Add health record": "＋ Добавить запись о здоровье", "PRIVATE HEALTH LOG": "ЛИЧНЫЙ ЖУРНАЛ ЗДОРОВЬЯ", "Your health records": "Ваши записи о здоровье", "Add a check-up, routine, medication reminder, or personal health note.": "Добавьте осмотр, привычку, напоминание о лекарстве или личную заметку о здоровье.", "BOUNDARY": "ГРАНИЦА", "Context, not diagnosis.": "Контекст, а не диагноз.", "Health records stay private and are for your own organization. Nik'Os does not replace a doctor or emergency service.": "Записи о здоровье остаются приватными и нужны для личной организации. Nik'Os не заменяет врача или экстренную помощь.", "Private by default": "Приватно по умолчанию", "Confirm important facts yourself": "Проверяйте важные факты самостоятельно", "Check-up": "Осмотр", "Condition / diagnosis": "Состояние / диагноз", "Routine": "Режим / привычка", "Medication": "Лекарство", "Fitness": "Физическая активность", "Training session": "Тренировка", "Add health record": "Добавить запись о здоровье", "No health records added yet.": "Записей о здоровье пока нет." });
 Object.assign(ru, { "Health.": "Здоровье.", "SLEEP": "СОН", "RECOVERY": "ВОССТАНОВЛЕНИЕ", "WEIGHT TREND": "ДИНАМИКА ВЕСА", "TRAINING": "ТРЕНИРОВКИ", "Connect WHOOP or add a record": "Подключите WHOOP или добавьте запись", "Observed, never diagnosed": "Наблюдение, не диагноз", "Connect a smart scale later": "Подключите умные весы позже", "Sessions and load stay linked": "Сессии и нагрузка связаны", "Sleep, recovery, strain — read-only import later": "Сон, восстановление и нагрузка — позже импорт только для чтения", "Smart scales": "Умные весы", "Weight and trend snapshots — CSV or manual": "Снимки веса и динамики — CSV или вручную", "Exams & conditions": "Обследования и состояния", "Private documents and confirmed personal context": "Приватные документы и подтверждённый личный контекст", "Manual": "Вручную", "AI will surface patterns and questions for review, never make a medical diagnosis.": "AI будет показывать закономерности и вопросы для проверки, но не ставить медицинский диагноз." });
 Object.assign(ru, { "Confidence": "Уверенность", "Reminder date": "Дата напоминания", "Linked record": "Связанная запись", "No link": "Без связи", "Low": "Низкая", "Medium": "Средняя", "High": "Высокая", "Source": "Источник", "Take snapshot": "Сохранить снимок", "Capital snapshot": "Снимок капитала", "No snapshots yet.": "Снимков пока нет.", "Snapshot uses confirmed records only.": "Снимок использует только подтверждённые записи.", "Add a reminder date to surface it here.": "Добавьте дату напоминания, чтобы увидеть её здесь.", "Reminder": "Напоминание", "Confidence": "Уверенность" });
+Object.assign(ru, { "REGULAR OBLIGATIONS": "РЕГУЛЯРНЫЕ ОБЯЗАТЕЛЬСТВА", "Recurring expenses": "Регулярные расходы", "Planned payments stay separate from actual spending.": "Плановые платежи отделены от фактических трат.", "Expected monthly load": "Ожидаемая нагрузка в месяц", "Due in 30 days": "К оплате за 30 дней", "Active obligations": "Активные обязательства", "Add recurring": "Добавить регулярный", "＋ Add recurring": "＋ Добавить регулярный", "Add mortgage, family support, utilities, rent, insurance, or subscriptions.": "Добавьте ипотеку, помощь семье, коммунальные услуги, аренду, страховку или подписки.", "Repeat this expense": "Повторять этот расход", "Frequency": "Периодичность", "Weekly": "Еженедельно", "Monthly": "Ежемесячно", "Quarterly": "Ежеквартально", "Yearly": "Ежегодно", "Next payment": "Следующий платёж", "Recurring status": "Статус обязательства", "Active": "Активно", "Paused": "Приостановлено", "This is a plan. Add a normal expense when the payment actually happens.": "Это план. Когда платёж произойдёт, добавьте обычный расход.", "Regular expense": "Регулярный расход", "Planned obligation": "Плановое обязательство" });
 const enFromRu = Object.fromEntries(Object.entries(ru).map(([english, russian]) => [russian, english]));
 
 const placeholderCopy = {
@@ -315,8 +316,13 @@ const dataSource = document.getElementById("dataSource");
 const dataConfidence = document.getElementById("dataConfidence");
 const dataReminder = document.getElementById("dataReminder");
 const dataLinkedRecord = document.getElementById("dataLinkedRecord");
+const dataRecurring = document.getElementById("dataRecurring");
+const dataFrequency = document.getElementById("dataFrequency");
+const dataNextDue = document.getElementById("dataNextDue");
+const dataRecurrenceStatus = document.getElementById("dataRecurrenceStatus");
 let activeFormType = "record";
 let editingRecordId = null;
+let activeRecurringExpenseForm = false;
 const categoryOptions = {
   task: [["personal", "Personal", "Личное"], ["finance", "Finance", "Финансы"], ["property", "Property", "Недвижимость"], ["health", "Health", "Здоровье"], ["other", "Other", "Другое"]],
   project: [["personal", "Personal", "Личное"], ["finance", "Finance", "Финансы"], ["property", "Property", "Недвижимость"], ["business", "Business", "Бизнес"], ["other", "Other", "Другое"]],
@@ -350,7 +356,7 @@ const formCopy = {
   receivable: { title: ["Add receivable", "Добавить дебиторку"], copy: ["Record a person, partner, or business that owes you money.", "Зафиксируйте человека, партнёра или компанию, которые должны вам деньги."], name: ["e.g. Partner loan", "Например: займ партнёру"] },
   payable: { title: ["Add payable", "Добавить кредиторку"], copy: ["Record money you owe to a person, business, or institution.", "Зафиксируйте деньги, которые вы должны человеку, бизнесу или организации."], name: ["e.g. Business loan", "Например: долг бизнесу"] },
   income: { title: ["Add income", "Добавить доход"], copy: ["Record income with its source and date. It stays local until the backend is connected.", "Зафиксируйте доход с источником и датой. Он останется локальным до подключения серверной части."], name: ["e.g. Business income", "Например: доход от бизнеса"] },
-  expense: { title: ["Add expense", "Добавить расход"], copy: ["Record an expense with its category and date.", "Зафиксируйте расход с категорией и датой."], name: ["e.g. Mortgage payment", "Например: платёж по ипотеке"] },
+  expense: { title: ["Add expense", "Добавить расход"], copy: ["Record an expense with its category and date. Use the repeat option for a planned regular obligation.", "Зафиксируйте расход с категорией и датой. Для регулярного обязательства включите повторение."], name: ["e.g. Mortgage payment", "Например: платёж по ипотеке"] },
   investment: { title: ["Add investment", "Добавить инвестицию"], copy: ["Choose a status explicitly. Discussed opportunities remain unowned until you confirm them.", "Явно выберите статус. Обсуждаемые возможности не считаются владением без подтверждения."], name: ["e.g. Brokerage position", "Например: позиция у брокера"] },
   asset: { title: ["Add asset", "Добавить актив"], copy: ["Create a private record marked needs confirmation until ownership is verified.", "Создайте приватную запись, отмеченную как требующая подтверждения до проверки владения."], name: ["e.g. Vehicle or valuable", "Например: автомобиль или ценность"] },
   property: { title: ["Add property", "Добавить недвижимость"], copy: ["Add the property context first; valuation and ownership can be verified later.", "Сначала добавьте контекст недвижимости; стоимость и владение можно подтвердить позже."], name: ["e.g. Apartment or land", "Например: квартира или участок"] },
@@ -415,7 +421,7 @@ const formFieldVisibility = {
   receivable: ["name", "category", "counterparty", "amount", "currency", "date", "status", "priority", "terms", "owner", "source", "confidence", "reminder", "linked", "details"],
   payable: ["name", "category", "counterparty", "amount", "currency", "date", "status", "priority", "terms", "owner", "source", "confidence", "reminder", "linked", "details"],
   income: ["name", "category", "amount", "currency", "date", "status", "owner", "source", "confidence", "reminder", "linked", "details"],
-  expense: ["name", "category", "amount", "currency", "date", "status", "owner", "source", "confidence", "reminder", "linked", "details"],
+  expense: ["name", "category", "amount", "currency", "date", "status", "owner", "source", "confidence", "reminder", "linked", "recurrence", "details"],
   investment: ["name", "category", "counterparty", "amount", "currency", "date", "status", "priority", "terms", "owner", "source", "confidence", "reminder", "linked", "details"],
   asset: ["name", "category", "counterparty", "amount", "currency", "date", "status", "owner", "source", "confidence", "reminder", "linked", "details"],
   property: ["name", "category", "counterparty", "amount", "currency", "date", "status", "owner", "source", "confidence", "reminder", "linked", "details"],
@@ -438,6 +444,8 @@ function updateDataFormFields(type) {
   });
   const categoryLabel = dataForm?.querySelector('[data-form-field="category"] span');
   if (categoryLabel) categoryLabel.textContent = type === "privacy" ? ui("Privacy level", "Уровень приватности") : type === "integration" ? ui("Integration type", "Тип интеграции") : ui("Category / type", "Категория / тип");
+  const recurrence = dataForm?.querySelector('[data-form-field="recurrence"]');
+  if (recurrence) recurrence.classList.toggle("is-enabled", type === "expense" && Boolean(dataRecurring?.checked));
 }
 
 function populateLinkedRecordOptions(existing = null) {
@@ -448,19 +456,21 @@ function populateLinkedRecordOptions(existing = null) {
 }
 
 function openDataForm(type = "record", existing = null) {
-  activeFormType = type;
+  activeRecurringExpenseForm = type === "recurring-expense";
+  activeFormType = activeRecurringExpenseForm ? "expense" : type;
   editingRecordId = existing?.id || null;
   ensureDocumentPicker();
-  const copy = formCopy[type] || formCopy.asset;
-  dataModalTitle.textContent = ui(copy.title[0], copy.title[1]);
-  dataModalCopy.textContent = ui(copy.copy[0], copy.copy[1]);
-  dataName.placeholder = ui(copy.name[0], copy.name[1]);
-  dataName.value = existing?.name || (type === "privacy" ? ui(copy.name[0], copy.name[1]) : "");
+  const copy = formCopy[activeFormType] || formCopy.asset;
+  const displayCopy = activeRecurringExpenseForm ? { title: ["Add recurring expense", "Добавить регулярный расход"], copy: ["Set the expected amount and next payment date. Actual payments remain separate.", "Укажите плановую сумму и дату следующего платежа. Фактические оплаты останутся отдельными тратами."], name: ["e.g. Mortgage", "Например: ипотека"] } : copy;
+  dataModalTitle.textContent = ui(displayCopy.title[0], displayCopy.title[1]);
+  dataModalCopy.textContent = ui(displayCopy.copy[0], displayCopy.copy[1]);
+  dataName.placeholder = ui(displayCopy.name[0], displayCopy.name[1]);
+  dataName.value = existing?.name || (activeFormType === "privacy" ? ui(copy.name[0], copy.name[1]) : "");
   dataCounterparty.value = existing?.counterparty || "";
   dataAmount.value = existing?.amount ?? "";
   dataCurrency.value = existing?.currency || "RUB";
   dataDate.value = existing?.date || "";
-  dataStatus.value = existing?.status || (type === "privacy" ? "confirmed" : "needs confirmation");
+  dataStatus.value = existing?.status || (activeFormType === "privacy" ? "confirmed" : activeRecurringExpenseForm ? "active" : "needs confirmation");
   if (dataPriority) dataPriority.value = existing?.priority || "medium";
   dataTerms.value = existing?.terms || "";
   dataOwner.value = existing?.owner || "Me";
@@ -468,15 +478,19 @@ function openDataForm(type = "record", existing = null) {
   if (dataSource) dataSource.value = existing?.source || "";
   if (dataConfidence) dataConfidence.value = existing?.confidence || "medium";
   if (dataReminder) dataReminder.value = existing?.reminderDate || "";
+  if (dataRecurring) dataRecurring.checked = activeFormType === "expense" && Boolean(existing?.recurring || activeRecurringExpenseForm);
+  if (dataFrequency) dataFrequency.value = existing?.frequency || "monthly";
+  if (dataNextDue) dataNextDue.value = existing?.nextDueDate || existing?.date || "";
+  if (dataRecurrenceStatus) dataRecurrenceStatus.value = existing?.recurrenceStatus || "active";
   const fileField = document.getElementById("dataFileField");
   const fileInput = document.getElementById("dataFile");
   if (fileField) fileField.hidden = type !== "document";
   if (fileInput) fileInput.value = "";
-  const options = categoryOptions[type] || categoryOptions.asset;
+  const options = categoryOptions[activeFormType] || categoryOptions.asset;
   dataCategory.innerHTML = options.map(([value, en, ruText]) => `<option value="${value}">${ui(en, ruText)}</option>`).join("");
   dataCategory.value = options[0]?.[0] || "other";
   populateLinkedRecordOptions(existing);
-  updateDataFormFields(type);
+  updateDataFormFields(activeFormType);
   dataModalTitle.textContent = existing ? ui("Edit record", "Изменить запись") : ui(copy.title[0], copy.title[1]);
   dataModalBackdrop.classList.add("open");
   dataModalBackdrop.setAttribute("aria-hidden", "false");
@@ -486,6 +500,7 @@ function closeDataForm() { dataModalBackdrop.classList.remove("open"); dataModal
 document.querySelectorAll("[data-open-form]").forEach((button) => button.addEventListener("click", () => openDataForm(button.dataset.openForm)));
 document.getElementById("taskAdd")?.addEventListener("click", () => openDataForm("task"));
 document.getElementById("projectAdd")?.addEventListener("click", () => openDataForm("project"));
+dataRecurring?.addEventListener("change", () => updateDataFormFields(activeFormType));
 document.getElementById("closeDataModal")?.addEventListener("click", closeDataForm);
 dataModalBackdrop?.addEventListener("click", (event) => { if (event.target === dataModalBackdrop) closeDataForm(); });
 dataForm?.addEventListener("submit", (event) => {
@@ -494,7 +509,8 @@ dataForm?.addEventListener("submit", (event) => {
   const previous = editingRecordId ? loadRecords().find((item) => item.id === editingRecordId) : null;
   const selectedFile = document.getElementById("dataFile")?.files?.[0];
   const attachment = selectedFile ? { name: selectedFile.name, size: selectedFile.size, type: selectedFile.type } : previous?.attachment || null;
-  const record = { id: editingRecordId || (globalThis.crypto?.randomUUID?.() || `nikos-${Date.now()}-${Math.random().toString(36).slice(2)}`), type: activeFormType, category: dataCategory.value, name: dataName.value.trim(), counterparty: dataCounterparty.value.trim(), amount: dataAmount.value ? Number(dataAmount.value) : null, currency: dataCurrency.value, date: dataDate.value || null, terms: dataTerms.value.trim(), owner: dataOwner.value, details: dataDetails.value.trim(), status: dataStatus.value, priority: dataPriority?.value || "medium", source: dataSource?.value.trim() || "", confidence: dataConfidence?.value || "medium", reminderDate: dataReminder?.value || null, linkedRecordId: dataLinkedRecord?.value || null, attachment, createdAt: editingRecordId ? (previous?.createdAt || new Date().toISOString()) : new Date().toISOString(), updatedAt: new Date().toISOString() };
+  const isRecurringExpense = activeFormType === "expense" && Boolean(dataRecurring?.checked);
+  const record = { id: editingRecordId || (globalThis.crypto?.randomUUID?.() || `nikos-${Date.now()}-${Math.random().toString(36).slice(2)}`), type: activeFormType, category: dataCategory.value, name: dataName.value.trim(), counterparty: dataCounterparty.value.trim(), amount: dataAmount.value ? Number(dataAmount.value) : null, currency: dataCurrency.value, date: dataDate.value || null, terms: dataTerms.value.trim(), owner: dataOwner.value, details: dataDetails.value.trim(), status: dataStatus.value, priority: dataPriority?.value || "medium", source: dataSource?.value.trim() || "", confidence: dataConfidence?.value || "medium", reminderDate: dataReminder?.value || null, linkedRecordId: dataLinkedRecord?.value || null, recurring: isRecurringExpense, frequency: isRecurringExpense ? (dataFrequency?.value || "monthly") : null, nextDueDate: isRecurringExpense ? (dataNextDue?.value || dataDate.value || null) : null, recurrenceStatus: isRecurringExpense ? (dataRecurrenceStatus?.value || "active") : null, attachment, createdAt: editingRecordId ? (previous?.createdAt || new Date().toISOString()) : new Date().toISOString(), updatedAt: new Date().toISOString() };
   if (!record.name) return;
   let records = [];
   try { records = JSON.parse(localStorage.getItem("nikos-records") || "[]"); } catch { records = []; }
@@ -547,6 +563,42 @@ function recordMarkup(record, className = "") {
   const icon = record.type === "investment" ? "◇" : record.type === "asset" || record.type === "property" ? "⌂" : record.type === "task" ? "✓" : record.type === "project" ? "↗" : record.type === "note" ? "✦" : "◈";
   return `<div class="record-row ${className}" data-record-type="${escapeHtml(record.type)}" data-record-category="${escapeHtml(record.category || "")}" data-record-status="${escapeHtml(record.status || "")}" data-record-priority="${escapeHtml(record.priority || "medium")}" data-record-date="${escapeHtml(record.date || "")}"><span class="record-icon">${icon}</span><span class="record-main"><strong>${escapeHtml(record.name)}</strong><small>${escapeHtml(categoryLabel(record))}${record.counterparty ? ` · ${escapeHtml(record.counterparty)}` : ""}${record.suggestedType && record.type === "note" ? ` · ${escapeHtml(suggestionLabel(record.suggestedType))}` : ""}</small><small>${formatRecordMeta(record)}</small></span><span class="record-amount">${formatRecordAmount(record)}</span><span class="record-actions"><button class="small-button record-action" data-record-action="edit" data-record-id="${escapeHtml(record.id)}" aria-label="${ui("Edit", "Изменить")}">✎</button><button class="small-button record-action" data-record-action="archive" data-record-id="${escapeHtml(record.id)}" aria-label="${ui("Archive", "Архивировать")}">⌁</button><button class="small-button record-action danger" data-record-action="delete" data-record-id="${escapeHtml(record.id)}" aria-label="${ui("Delete", "Удалить")}">×</button></span></div>`;
 }
+function recurrenceLabel(value) {
+  return ({ weekly: ui("Weekly", "Еженедельно"), monthly: ui("Monthly", "Ежемесячно"), quarterly: ui("Quarterly", "Ежеквартально"), annual: ui("Yearly", "Ежегодно") })[value] || ui("Monthly", "Ежемесячно");
+}
+function formatShortDate(value) {
+  const date = dateOnly(value);
+  return date ? date.toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short", year: "numeric" }) : ui("Not set", "Не указано");
+}
+function recurringRecordMarkup(record) {
+  const status = record.recurrenceStatus === "paused" ? ui("Paused", "Приостановлено") : ui("Active", "Активно");
+  const next = record.nextDueDate || record.date;
+  const meta = [recurrenceLabel(record.frequency), next ? `${ui("Next payment", "Следующий платёж")}: ${formatShortDate(next)}` : "", status, record.counterparty, record.terms].filter(Boolean).map(escapeHtml).join(" · ");
+  return `<div class="record-row recurring-record" data-record-type="expense" data-record-category="${escapeHtml(record.category || "")}" data-record-status="${escapeHtml(record.status || "")}" data-record-priority="${escapeHtml(record.priority || "medium")}" data-record-date="${escapeHtml(next || "")}"><span class="record-icon">↻</span><span class="record-main"><strong>${escapeHtml(record.name)}</strong><small>${escapeHtml(categoryLabel(record))}</small><small>${meta}</small></span><span class="record-amount">${formatRecordAmount(record)}</span><span class="record-actions"><button class="small-button record-action" data-record-action="edit" data-record-id="${escapeHtml(record.id)}" aria-label="${ui("Edit", "Изменить")}">✎</button><button class="small-button record-action" data-record-action="archive" data-record-id="${escapeHtml(record.id)}" aria-label="${ui("Archive", "Архивировать")}">⌁</button><button class="small-button record-action danger" data-record-action="delete" data-record-id="${escapeHtml(record.id)}" aria-label="${ui("Delete", "Удалить")}">×</button></span></div>`;
+}
+function monthlyEquivalent(record) {
+  const amount = Number(record.amount);
+  if (!Number.isFinite(amount)) return 0;
+  return amount * ({ weekly: 52 / 12, monthly: 1, quarterly: 1 / 3, annual: 1 / 12 }[record.frequency] || 1);
+}
+function renderRecurringExpenses(records = loadRecords()) {
+  const host = document.getElementById("recurringExpenseRecords");
+  if (!host) return;
+  const recurring = records.filter((record) => record.type === "expense" && record.recurring && record.status !== "archived").sort((a, b) => String(a.nextDueDate || a.date || "9999").localeCompare(String(b.nextDueDate || b.date || "9999")));
+  host.innerHTML = recurring.length ? recurring.map(recurringRecordMarkup).join("") : `<div class="ledger-empty">${ui("Add mortgage, family support, utilities, rent, insurance, or subscriptions.", "Добавьте ипотеку, помощь семье, коммунальные услуги, аренду, страховку или подписки.")}</div>`;
+  const active = recurring.filter((record) => record.recurrenceStatus !== "paused");
+  const totals = new Map();
+  active.forEach((record) => totals.set(record.currency || "RUB", (totals.get(record.currency || "RUB") || 0) + monthlyEquivalent(record)));
+  const monthly = totals.size ? [...totals.entries()].map(([currency, amount]) => `${amount.toLocaleString(locale === "ru" ? "ru-RU" : "en-US", { maximumFractionDigits: 2 })} ${currency}`).join(" · ") : "—";
+  const now = new Date();
+  const horizon = new Date(now);
+  horizon.setDate(horizon.getDate() + 30);
+  const dueSoon = active.filter((record) => { const due = dateOnly(record.nextDueDate || record.date); return due && due <= horizon; }).length;
+  const set = (id, value) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+  set("recurringMonthlyLoad", monthly);
+  set("recurringDueSoon", String(dueSoon));
+  set("recurringActiveCount", String(active.length));
+}
 function renderUploadedFiles(records = loadRecords()) {
   const host = document.getElementById("uploadedFiles");
   if (!host) return;
@@ -566,7 +618,7 @@ function cashflowRecordsForPeriod(records = loadRecords()) {
 function renderCashflowEntries(records = loadRecords()) {
   const host = document.getElementById("cashflowEntries");
   if (!host) return;
-  const entries = cashflowRecordsForPeriod(records).filter((record) => record.type === "income" || record.type === "expense").slice(-6).reverse();
+  const entries = cashflowRecordsForPeriod(records).filter((record) => (record.type === "income" || record.type === "expense") && !record.recurring).slice(-6).reverse();
   host.innerHTML = entries.length ? entries.map((entry) => `<div class="cashflow-entry ${entry.type}"><span><strong>${escapeHtml(entry.name)}</strong><small>${formatRecordMeta(entry)}</small></span><span class="entry-amount">${entry.type === "income" ? "+" : "−"} ${formatRecordAmount(entry)}</span></div>`).join("") : `<div class="ledger-empty">${ui("Add your first income or expense. Transfers between your own accounts stay separate.", "Добавьте первый доход или расход. Переводы между своими счетами останутся отдельно.")}</div>`;
 }
 function renderRecordList(hostId, records, emptyText) {
@@ -599,6 +651,7 @@ function renderDynamicRecords(records = loadRecords()) {
   renderInboxRecords(records);
   renderRecordList("accountRecords", records.filter((record) => record.type === "account"), ui("Add a bank, brokerage, cash, or business account.", "Добавьте банковский, брокерский, наличный или бизнес-счёт."));
   renderDebtRecords(records);
+  renderRecurringExpenses(records);
   renderRecordList("investmentRecords", records.filter((record) => record.type === "investment"), ui("Add construction, Jetlend, car-reseller, brokerage, or another position.", "Добавьте строительство, Jetlend, сделку с перекупщиком, брокерскую позицию или другую инвестицию."));
   updateInvestmentFilterCounts(records);
   renderInvestmentReviewCalendar(records);
@@ -902,7 +955,7 @@ function takeCapitalSnapshot() {
 function renderCashflowMetrics(records = loadRecords()) {
   const periodRecords = cashflowRecordsForPeriod(records);
   const income = periodRecords.filter((record) => record.type === "income");
-  const expenses = periodRecords.filter((record) => record.type === "expense");
+  const expenses = periodRecords.filter((record) => record.type === "expense" && !record.recurring);
   const incomeTotal = formatTotals(income);
   const expenseTotal = formatTotals(expenses);
   const netTotal = formatTotals([...income, ...expenses.map((record) => ({ ...record, amount: -Number(record.amount || 0) }))]);
@@ -1015,22 +1068,6 @@ document.addEventListener("click", (event) => {
 const cloudConfigKey = "nikos-cloud-config";
 let cloudClient = null;
 let cloudUser = null;
-const authGate = document.getElementById("authGate");
-const authGateForm = document.getElementById("authGateForm");
-const authGateConfig = document.getElementById("authGateConfig");
-const authGateStatus = document.getElementById("authGateStatus");
-let appUnlocked = false;
-function setAuthGateStatus(message = "") { if (authGateStatus) authGateStatus.textContent = message; }
-function unlockApp() {
-  appUnlocked = true;
-  document.body.classList.remove("auth-locked");
-  if (authGate) { authGate.hidden = true; authGate.setAttribute("aria-hidden", "true"); }
-}
-function lockApp() {
-  appUnlocked = false;
-  document.body.classList.add("auth-locked");
-  if (authGate) { authGate.hidden = false; authGate.setAttribute("aria-hidden", "false"); }
-}
 function loadCloudConfig() {
   try { return JSON.parse(localStorage.getItem(cloudConfigKey) || "null"); } catch { return null; }
 }
@@ -1055,53 +1092,6 @@ function restoreCloudDraft() {
     if (key && !key.value) key.value = draft.key || "";
     if (email && !email.value) email.value = draft.email || "";
   } catch { /* Draft persistence is optional. */ }
-}
-function restoreAuthGateFields() {
-  const config = loadCloudConfig();
-  let draft = null;
-  try { draft = JSON.parse(localStorage.getItem(cloudDraftKey) || "null"); } catch { draft = null; }
-  const url = document.getElementById("authGateUrl");
-  const key = document.getElementById("authGateKey");
-  const email = document.getElementById("authGateEmail");
-  if (url) url.value = config?.url || draft?.url || "";
-  if (key) key.value = config?.key || draft?.key || "";
-  if (email) email.value = draft?.email || "";
-  if (authGateConfig) authGateConfig.hidden = Boolean(config?.url && config?.key);
-}
-async function submitAuthGate(event) {
-  event.preventDefault();
-  setAuthGateStatus("");
-  const url = document.getElementById("authGateUrl")?.value.trim();
-  const key = document.getElementById("authGateKey")?.value.trim();
-  const email = document.getElementById("authGateEmail")?.value.trim();
-  const password = document.getElementById("authGatePassword")?.value || "";
-  if (!url || !key) { if (authGateConfig) authGateConfig.hidden = false; setAuthGateStatus("Укажите URL проекта и публичный ключ Supabase."); return; }
-  if (!email || !password) { setAuthGateStatus("Введите email и пароль аккаунта."); return; }
-  if (!document.getElementById("authGateConsent")?.checked) { setAuthGateStatus("Подтвердите доступ Nik'Os к вашим записям."); return; }
-  const submit = authGateForm?.querySelector("button[type=submit]");
-  if (submit) submit.disabled = true;
-  try {
-    const urlField = document.getElementById("supabaseUrl");
-    const keyField = document.getElementById("supabaseAnonKey");
-    const emailField = document.getElementById("cloudEmail");
-    if (urlField) urlField.value = url;
-    if (keyField) keyField.value = key;
-    if (emailField) emailField.value = email;
-    saveCloudDraft();
-    if (!window.supabase?.createClient || !configureCloudClient()) { setAuthGateStatus("Не удалось подготовить подключение Supabase."); return; }
-    const result = await cloudClient.auth.signInWithPassword({ email, password });
-    if (result.error) { setAuthGateStatus(result.error.message); return; }
-    cloudUser = result.data.session?.user || null;
-    if (!cloudUser) { setAuthGateStatus("Supabase не вернул активную сессию."); return; }
-    localStorage.setItem("nikos-cloud-consent", "true");
-    setCloudStatus("connected");
-    unlockApp();
-    await syncAllCloudRecords();
-  } catch (error) {
-    setAuthGateStatus(error?.message || "Не удалось войти. Проверьте данные и попробуйте снова.");
-  } finally {
-    if (submit) submit.disabled = false;
-  }
 }
 function ensureRecordId(record) {
   if (record.id) return record;
@@ -1196,24 +1186,22 @@ async function connectCloud(createAccount = false) {
 }
 async function initCloud() {
   restoreCloudDraft();
-  restoreAuthGateFields();
   const config = loadCloudConfig();
-  if (!config || !window.supabase?.createClient) { setCloudStatus(config ? "ready" : "setup"); lockApp(); return; }
+  if (!config || !window.supabase?.createClient) { setCloudStatus(config ? "ready" : "setup"); return; }
   const urlField = document.getElementById("supabaseUrl");
   const keyField = document.getElementById("supabaseAnonKey");
   if (urlField) urlField.value = config.url || "";
   if (keyField) keyField.value = config.key || "";
   if (!configureCloudClient()) return;
-  cloudClient.auth.onAuthStateChange((_event, session) => { cloudUser = session?.user || null; setCloudStatus(cloudUser ? "connected" : "ready"); if (cloudUser) unlockApp(); else lockApp(); });
+  cloudClient.auth.onAuthStateChange((_event, session) => { cloudUser = session?.user || null; setCloudStatus(cloudUser ? "connected" : "ready"); });
   const sessionResult = await cloudClient.auth.getSession();
   cloudUser = sessionResult.data.session?.user || null;
   setCloudStatus(cloudUser ? "connected" : "ready");
-  if (cloudUser && localStorage.getItem("nikos-cloud-consent")) { unlockApp(); await syncAllCloudRecords(); } else lockApp();
+  if (cloudUser && localStorage.getItem("nikos-cloud-consent")) await syncAllCloudRecords();
 }
-authGateForm?.addEventListener("submit", (event) => { void submitAuthGate(event); });
 document.getElementById("cloudConnect")?.addEventListener("click", () => { void connectCloud(false); });
 document.getElementById("cloudSignUp")?.addEventListener("click", () => { void connectCloud(true); });
-document.getElementById("cloudSignOut")?.addEventListener("click", async () => { if (cloudClient) await cloudClient.auth.signOut(); cloudUser = null; setCloudStatus("ready"); lockApp(); setAuthGateStatus(""); showToast(ui("Signed out. Local records remain on this device.", "Вы вышли. Локальные записи остались на этом устройстве.")); });
+document.getElementById("cloudSignOut")?.addEventListener("click", async () => { if (cloudClient) await cloudClient.auth.signOut(); cloudUser = null; setCloudStatus("ready"); showToast(ui("Signed out. Local records remain on this device.", "Вы вышли. Локальные записи остались на этом устройстве.")); });
 document.querySelectorAll("#supabaseUrl, #supabaseAnonKey, #cloudEmail").forEach((input) => input.addEventListener("input", saveCloudDraft));
 void initCloud();
 
