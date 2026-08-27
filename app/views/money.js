@@ -1,20 +1,20 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-135635";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-135827";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-135635";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-135635";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-135635";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-135635";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-135635";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-135635";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-135635";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-135635";
-import { isVerified } from "../schema.js?v=20260827-135635";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-135635";
-import { openRecordForm } from "../form.js?v=20260827-135635";
-import * as store from "../store.js?v=20260827-135635";
-import * as records from "../records.js?v=20260827-135635";
+         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-135827";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-135827";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-135827";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-135827";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-135827";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-135827";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-135827";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-135827";
+import { isVerified } from "../schema.js?v=20260827-135827";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-135827";
+import { openRecordForm } from "../form.js?v=20260827-135827";
+import * as store from "../store.js?v=20260827-135827";
+import * as records from "../records.js?v=20260827-135827";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";

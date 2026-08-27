@@ -1079,6 +1079,26 @@ button.metric-card:hover { border-color: var(--border-strong); }
   .set-row { grid-template-columns: minmax(0, 1fr) 3.75rem 3.75rem 1.5rem; }
 }
 
+/* Money by project: the result first, the parts underneath. */
+.project-money-list { display: grid; gap: 8px; }
+.project-money-row {
+  display: grid; gap: 3px; padding: 11px 13px;
+  border: 1px solid var(--line); border-left: 3px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+}
+.project-money-row.profit { border-left-color: var(--good, #3e8e6e); }
+.project-money-row.loss { border-left-color: var(--danger, #d9534f); }
+.project-money-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 4px 12px;
+}
+.project-money-head strong { font-size: var(--step-sm); }
+.project-money-head b { font-variant-numeric: tabular-nums; font-weight: 700; }
+.project-money-row.profit .project-money-head b { color: var(--good, #3e8e6e); }
+.project-money-row.loss .project-money-head b { color: var(--danger, #d9534f); }
+.project-money-row small { color: var(--faint); font-size: var(--step-xs); }
+.project-money-row small.warn { color: var(--warn); }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

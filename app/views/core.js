@@ -1,16 +1,17 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-135635";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-135827";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-135635";
-import { formatMoney } from "../money.js?v=20260827-135635";
-import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-135635";
-import { buildAttention } from "../attention.js?v=20260827-135635";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-135635";
-import { openRecordForm } from "../form.js?v=20260827-135635";
-import { navigate } from "../router.js?v=20260827-135635";
-import * as store from "../store.js?v=20260827-135635";
-import * as records from "../records.js?v=20260827-135635";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-135827";
+import { formatMoney } from "../money.js?v=20260827-135827";
+import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-135827";
+import { buildAttention } from "../attention.js?v=20260827-135827";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-135827";
+import { openRecordForm } from "../form.js?v=20260827-135827";
+import { navigate } from "../router.js?v=20260827-135827";
+import * as store from "../store.js?v=20260827-135827";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-135827";
+import * as records from "../records.js?v=20260827-135827";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -541,6 +542,38 @@ export function projectsView() {
                    ? `${Math.round(active.reduce((sum, item) => sum + (Number(item.progress) || 0), 0) / active.length)}%`
                    : "—" })
   ]));
+
+  /* Money attached to projects, when there is any. A project screen without
+     it answers only how far along something is, never whether it pays. */
+  const withMoney = projectsWithMoney(store.liveRecords(), base(), store.getRates());
+  if (withMoney.length) {
+    const totals = projectTotals(withMoney);
+    const asMoney = (minor) => formatMoney(minor, base(), getLocale());
+    const signed = (minor) => `${minor > 0 ? "+" : ""}${asMoney(minor)}`;
+
+    page.append(panel("records-panel project-money-panel",
+      panelHeader(ru() ? "ДЕНЬГИ ПО ПРОЕКТАМ" : "MONEY BY PROJECT",
+        ru() ? `Итого ${signed(totals.netMinor)}` : `Total ${signed(totals.netMinor)}`),
+
+      el("div", { class: "project-money-list" }, withMoney.map((entry) => el("div", {
+        class: `project-money-row ${entry.state}`
+      }, [
+        el("div", { class: "project-money-head" }, [
+          el("strong", { text: entry.project.name }),
+          el("b", { text: signed(entry.netMinor) })
+        ]),
+        el("small", { text: ru()
+          ? `Доход ${asMoney(entry.incomeMinor)} · расход ${asMoney(entry.expenseMinor)}${entry.returnPercent === null ? "" : ` · ${entry.returnPercent > 0 ? "+" : ""}${entry.returnPercent.toFixed(0)}% к вложенному`}`
+          : `In ${asMoney(entry.incomeMinor)} · out ${asMoney(entry.expenseMinor)}${entry.returnPercent === null ? "" : ` · ${entry.returnPercent.toFixed(0)}% return`}` }),
+        entry.skipped
+          ? el("small", { class: "warn", text: ru()
+              ? `Не посчитано записей: ${entry.skipped}.`
+              : `${entry.skipped} records could not be counted.` })
+          : null
+      ]))),
+
+      el("p", { class: "panel-note", text: ru() ? PROJECT_MONEY_NOTE.ru : PROJECT_MONEY_NOTE.en })));
+  }
 
   page.append(panel("records-panel",
     panelHeader(ru() ? "ПРОЕКТЫ" : "PROJECTS", ru() ? "В работе" : "In motion"),

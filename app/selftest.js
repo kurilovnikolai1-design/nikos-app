@@ -2,27 +2,28 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-135635";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-135635";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-135827";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-135827";
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-135635";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-135635";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-135635";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-135635";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-135635";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-135635";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-135635";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-135635";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-135635";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-135635";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-135635";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-135635";
-import { parseReport } from "./procedures.js?v=20260827-135635";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-135635";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-135635";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-135635";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-135635";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-135635";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-135827";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-135827";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-135827";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-135827";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-135827";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-135827";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-135827";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-135827";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-135827";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-135827";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-135827";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-135827";
+import { parseReport } from "./procedures.js?v=20260827-135827";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-135827";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-135827";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-135827";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-135827";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-135827";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-135827";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -280,11 +281,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-135635")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-135827")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-135635")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-135827")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -293,14 +294,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-135635")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-135827")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-135635")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-135827")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -540,6 +541,31 @@ check("неделя с тренировкой имеет объём", weeks.some
 
 const bests = freshRecords(log, { now: new Date("2026-08-27T12:00:00") });
 check("новый рекорд замечен", bests.length === 1 && bests[0].weight === 100);
+
+/* ---------- Money by project ---------- */
+
+const site = [
+  { id: "pj1", type: "project", name: "Сайт", status: "active", linkedIds: ["pi1", "pe1"], deletedAt: null },
+  { id: "pj2", type: "project", name: "Магазин", status: "active", linkedIds: [], deletedAt: null },
+  { id: "pi1", type: "income", amountMinor: 150_000_00, currency: "RUB", status: "confirmed", linkedIds: [], deletedAt: null },
+  { id: "pe1", type: "expense", amountMinor: 12_000_00, currency: "RUB", status: "confirmed", linkedIds: [], deletedAt: null },
+  /* Linked from the expense's side rather than the project's — the same act. */
+  { id: "pe2", type: "expense", amountMinor: 80_000_00, currency: "RUB", status: "confirmed", linkedIds: ["pj2"], deletedAt: null },
+  { id: "pe3", type: "expense", amountMinor: 5_000_00, currency: "RUB", status: "unverified", linkedIds: ["pj2"], deletedAt: null }
+];
+const byProject = projectsWithMoney(site, "RUB", RATES);
+const siteMoney = byProject.find((entry) => entry.project.id === "pj1");
+const shopMoney = byProject.find((entry) => entry.project.id === "pj2");
+
+check("связь считается в обе стороны", shopMoney?.expenseMinor === 80_000_00,
+      "ссылка от расхода к проекту должна работать так же, как от проекта к расходу");
+check("итог по проекту", siteMoney?.netMinor === 138_000_00, String(siteMoney?.netMinor));
+check("возврат к вложенному", Math.round(siteMoney?.returnPercent) === 1150);
+check("неподтверждённое не входит, но названо", shopMoney?.skipped === 1);
+check("проекты без денег не показываются",
+      projectsWithMoney([site[1]], "RUB", RATES).length === 0);
+check("итоги суммируются", projectTotals(byProject).netMinor === 58_000_00,
+      String(projectTotals(byProject).netMinor));
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };
