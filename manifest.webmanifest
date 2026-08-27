@@ -1,0 +1,22 @@
+{
+  "name": "Nik'Os — Personal Family Office & Life OS",
+  "short_name": "Nik'Os",
+  "description": "Private personal family office and life operating system.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090b0b",
+  "theme_color": "#090b0b",
+  "lang": "ru",
+  "categories": ["productivity", "finance", "lifestyle"],
+  "icons": [
+    {
+      "src": "./nikos-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
