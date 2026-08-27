@@ -2,17 +2,17 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-101457";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-101457";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-101457";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-101457";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-101457";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-101457";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-101457";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-101457";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-101457";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-101457";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-101457";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-104630";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-104630";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-104630";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-104630";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-104630";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-104630";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-104630";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-104630";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-104630";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-104630";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-104630";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
