@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-090330";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-091102";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -86,6 +86,7 @@ const DICT = {
   "view.crypto": { ru: "Крипто", en: "Crypto" },
   "view.assets": { ru: "Имущество", en: "Assets" },
   "view.health": { ru: "Здоровье и спорт", en: "Health & sport" },
+  "view.labs": { ru: "Анализы и медицина", en: "Labs & medical" },
   "view.documents": { ru: "Документы", en: "Documents" },
   "view.people": { ru: "Люди", en: "People" },
   "view.decisions": { ru: "Решения", en: "Decisions" },
@@ -97,6 +98,7 @@ const DICT = {
   "tab.tasks": { ru: "Задачи", en: "Tasks" },
   "tab.cashflow": { ru: "Деньги", en: "Money" },
   "tab.health": { ru: "Здоровье", en: "Health" },
+  "tab.labs": { ru: "Анализы", en: "Labs" },
   "tab.capital": { ru: "Капитал", en: "Capital" },
 
   /* Command Center */

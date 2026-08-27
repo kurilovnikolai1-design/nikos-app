@@ -193,7 +193,7 @@ export const TYPES = {
 
   /* ---------- Health & sport ---------- */
   health: {
-    view: "health", icon: "♡", role: BALANCE_ROLE.NONE, sensitive: true,
+    view: "labs", icon: "✚", role: BALANCE_ROLE.NONE, sensitive: true,
     title: { ru: "Запись о здоровье", en: "Health record" },
     plural: { ru: "Здоровье", en: "Health" },
     fields: ["name", "category", "date", "status", "priority", "owner", "source", "confidence", "reminderDate", "linked", "details"],
@@ -225,7 +225,7 @@ export const TYPES = {
   },
 
   lab: {
-    view: "health", icon: "⚗", role: BALANCE_ROLE.NONE, sensitive: true,
+    view: "labs", icon: "⚗", role: BALANCE_ROLE.NONE, sensitive: true,
     title: { ru: "Анализ", en: "Lab result" },
     plural: { ru: "Анализы", en: "Lab results" },
     fields: ["name", "category", "value", "unit", "refLow", "refHigh", "date", "counterparty",

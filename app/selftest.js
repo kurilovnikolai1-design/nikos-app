@@ -2,16 +2,19 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-090330";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-090330";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-090330";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-090330";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-090330";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-090330";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-090330";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-091102";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-091102";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-091102";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-091102";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-091102";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-091102";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-091102";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-091102";
 
+/* Kept in step with router.js — a type pointing at a view that does not exist
+   is how records used to disappear. */
 const VIEWS = ["command", "inbox", "tasks", "projects", "capital", "debts", "cashflow", "investments",
-  "crypto", "assets", "health", "documents", "people", "decisions", "timeline", "settings"];
+  "crypto", "assets", "health", "labs", "documents", "people", "decisions", "timeline", "settings"];
 
 const RATES = {
   base: "RUB",
@@ -36,6 +39,11 @@ const record = (over) => ({
 
 /* ---------- Schema ---------- */
 check("схема", assertSchemaIsSound(VIEWS).length === 0, assertSchemaIsSound(VIEWS).join("; "));
+/* The list above is a copy, and drift between it and the router is exactly the
+   kind of gap that let a record type point at a view that did not exist. */
+check("список экранов совпадает с роутером",
+  VIEWS.length === ROUTER_VIEWS.length && VIEWS.every((view) => ROUTER_VIEWS.includes(view)),
+  `тест: ${VIEWS.length}, роутер: ${ROUTER_VIEWS.length}`);
 
 /* ---------- Money ---------- */
 check("парсинг «1 234,56»", parseAmount("1 234,56", "RUB") === 123456);
@@ -141,7 +149,7 @@ const migrated = migrateAll(legacy);
 check("мигрировано всё", migrated.length === legacy.length, `${migrated.length}/${legacy.length}`);
 
 const known = new Set(["task", "project", "note", "account", "receivable", "payable", "income", "expense",
-  "investment", "crypto", "asset", "document", "person", "health", "workout", "measurement", "decision", "event", "snapshot"]);
+  "investment", "crypto", "asset", "document", "person", "health", "lab", "workout", "measurement", "decision", "event", "snapshot"]);
 check("нет типов-сирот", migrated.every((r) => known.has(r.type)), migrated.map((r) => r.type).join(","));
 
 const ambiguous = migrated.find((r) => r.id === "L1");

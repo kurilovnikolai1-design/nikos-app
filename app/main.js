@@ -1,26 +1,26 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-090330";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-091102";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-090330";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-090330";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-090330";
-import { buildAttention } from "./attention.js?v=20260827-090330";
-import { refresh, recordRow } from "./render.js?v=20260827-090330";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-090330";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-090330";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-090330";
-import * as lock from "./lock.js?v=20260827-090330";
-import * as persist from "./persist.js?v=20260827-090330";
-import * as store from "./store.js?v=20260827-090330";
-import * as records from "./records.js?v=20260827-090330";
-import * as cloud from "./cloud.js?v=20260827-090330";
-import * as whoop from "./whoop.js?v=20260827-090330";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-091102";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-091102";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-091102";
+import { buildAttention } from "./attention.js?v=20260827-091102";
+import { refresh, recordRow } from "./render.js?v=20260827-091102";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-091102";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-091102";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-091102";
+import * as lock from "./lock.js?v=20260827-091102";
+import * as persist from "./persist.js?v=20260827-091102";
+import * as store from "./store.js?v=20260827-091102";
+import * as records from "./records.js?v=20260827-091102";
+import * as cloud from "./cloud.js?v=20260827-091102";
+import * as whoop from "./whoop.js?v=20260827-091102";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-090330";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-090330";
-import { assetsView, healthView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-090330";
-import { settingsView } from "./views/settings.js?v=20260827-090330";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-091102";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-091102";
+import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-091102";
+import { settingsView } from "./views/settings.js?v=20260827-091102";
 
 const ru = () => getLocale() === "ru";
 
@@ -28,7 +28,7 @@ const RENDERERS = {
   command: commandView, inbox: inboxView, tasks: tasksView, projects: projectsView,
   capital: capitalView, debts: debtsView, cashflow: cashflowView,
   investments: investmentsView, crypto: cryptoView, assets: assetsView,
-  health: healthView, documents: documentsView, people: peopleView,
+  health: healthView, labs: labsView, documents: documentsView, people: peopleView,
   decisions: decisionsView, timeline: timelineView, settings: settingsView
 };
 
@@ -40,7 +40,7 @@ const NAV = [
     { view: "capital", icon: "◈" }, { view: "debts", icon: "↔" }, { view: "cashflow", icon: "≈" },
     { view: "investments", icon: "◇" }, { view: "crypto", icon: "₿" }] },
   { group: "nav.life", items: [
-    { view: "assets", icon: "□" }, { view: "health", icon: "♡" }, { view: "documents", icon: "▱" },
+    { view: "assets", icon: "□" }, { view: "health", icon: "♡" }, { view: "labs", icon: "⚗" }, { view: "documents", icon: "▱" },
     { view: "people", icon: "◎" }, { view: "decisions", icon: "◆" }, { view: "timeline", icon: "◷" }] }
 ];
 

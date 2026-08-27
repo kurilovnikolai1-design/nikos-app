@@ -6,7 +6,7 @@
    technology is never offered fifteen hidden pages. */
 
 export const VIEWS = ["command", "inbox", "tasks", "projects", "capital", "debts", "cashflow",
-  "investments", "crypto", "assets", "health", "documents", "people", "decisions", "timeline", "settings"];
+  "investments", "crypto", "assets", "health", "labs", "documents", "people", "decisions", "timeline", "settings"];
 
 const listeners = new Set();
 let current = "command";

@@ -1,20 +1,21 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-090330";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-091102";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-090330";
-import { formatMoney } from "../money.js?v=20260827-090330";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-090330";
-import { categoriesOf } from "../schema.js?v=20260827-090330";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-090330";
-import { openRecordForm } from "../form.js?v=20260827-090330";
-import { importCsv } from "../csv.js?v=20260827-090330";
-import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-090330";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-090330";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-090330";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-090330";
-import * as store from "../store.js?v=20260827-090330";
-import * as records from "../records.js?v=20260827-090330";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-091102";
+import { formatMoney } from "../money.js?v=20260827-091102";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-091102";
+import { categoriesOf } from "../schema.js?v=20260827-091102";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-091102";
+import { openRecordForm } from "../form.js?v=20260827-091102";
+import { navigate } from "../router.js?v=20260827-091102";
+import { importCsv } from "../csv.js?v=20260827-091102";
+import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-091102";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-091102";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-091102";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-091102";
+import * as store from "../store.js?v=20260827-091102";
+import * as records from "../records.js?v=20260827-091102";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -66,8 +67,8 @@ export function assetsView() {
 
 /* ---------- Health & sport ---------- */
 
-const healthState = { tab: "overview", days: 30, expandedDay: null, showRaw: false,
-                      labQuery: "", labPanel: "all", labOnlyOff: false };
+const healthState = { tab: "overview", days: 30, expandedDay: null, showRaw: false };
+const labState = { tab: "analytes", query: "", panel: "all", onlyOff: false };
 
 const DAY_LENGTHS = [
   { value: 7, key: "health.week7" },
@@ -89,25 +90,19 @@ export function healthView() {
   const page = document.createDocumentFragment();
 
   page.append(pageHeading(t("view.health"), t("health.contextNotDiagnosis"),
-    [el("button", { class: "ghost-button", type: "button", text: `＋ ${t("health.pasteLab")}`,
-                    onclick: () => openLabPaste({ onDone: refresh }) }),
-     el("button", { class: "ghost-button", type: "button", text: `＋ ${t("health.logMeasurement")}`,
+    [el("button", { class: "ghost-button", type: "button", text: `＋ ${t("health.logMeasurement")}`,
                     onclick: () => openRecordForm("measurement", null, { onSaved: refresh }) }),
      addButton("workout", t("health.logWorkout"), refresh)]));
 
   page.append(el("div", { class: "segmented wide" }, [
     tab("overview", t("health.overview")),
     tab("byday", `${t("health.byDay")} (${days.length})`),
-    tab("sport", `${t("health.workouts")} (${workouts.length})`),
-    tab("labs", `${t("health.labs")} (${labs.length})`),
-    tab("records", `${typeLabel("health")} (${healthRecords.length})`)
+    tab("sport", `${t("health.workouts")} (${workouts.length})`)
   ]));
 
-  if (healthState.tab === "overview") page.append(overviewPanel());
-  else if (healthState.tab === "byday") page.append(byDayPanel());
+  if (healthState.tab === "byday") page.append(byDayPanel());
   else if (healthState.tab === "sport") page.append(sportPanel());
-  else if (healthState.tab === "labs") page.append(labsPanel());
-  else page.append(recordsPanel());
+  else page.append(overviewPanel());
 
   return page;
 
@@ -214,7 +209,13 @@ export function healthView() {
       host.append(panel("records-panel lab-flagged",
         panelHeader(ru() ? "ВНЕ НОРМЫ" : "OUT OF RANGE", ru() ? "Из последних анализов" : "From recent lab results",
           el("span", { class: "security-badge", text: String(flagged.length) })),
-        el("div", { class: "analyte-list" }, flagged.slice(0, 6).map(analyteRow)),
+        el("div", { class: "flagged-strip" }, flagged.slice(0, 6).map((group) => el("button", {
+          class: `flagged-chip ${group.verdict}`, type: "button",
+          onclick: () => navigate("labs")
+        }, [
+          el("strong", { text: group.name }),
+          el("small", { text: `${formatNumber(group.latest.value, 2)} ${group.latest.unit || ""}`.trim() })
+        ]))),
         el("p", { class: "panel-note", text: t("health.notDiagnosis") })));
     }
 
@@ -291,12 +292,6 @@ export function healthView() {
   function recordsPanel() {
     const host = document.createDocumentFragment();
     host.append(panel("records-panel",
-      panelHeader(ru() ? "ЗДОРОВЬЕ" : "HEALTH", ru() ? "Осмотры, лекарства, состояния" : "Check-ups, medication, conditions"),
-      recordList("health-records", sortByDate(healthRecords), {
-        empty: ru() ? "Добавьте осмотр, лекарство или состояние." : "Add a check-up, a medication or a condition.",
-        addType: "health"
-      })));
-    host.append(panel("records-panel",
       panelHeader(ru() ? "ПОКАЗАТЕЛИ" : "MEASUREMENTS", countOf(measurements.length, PLURALS.record),
         el("button", { class: "small-button", type: "button", text: t("health.importCsv"),
                        onclick: () => importCsv({ onDone: refresh }) })),
@@ -305,6 +300,53 @@ export function healthView() {
         addType: "measurement"
       })));
     return host;
+  }
+}
+
+/* ---------- Labs & medical ---------- */
+
+/* Split out of the health screen: five tabs in one row mixed two unrelated
+   things — how the body is doing day to day, and what a laboratory measured.
+   They are opened at different moments, for different reasons. */
+export function labsView() {
+  const all = store.liveRecords();
+  const labs = store.recordsOfType("lab");
+  const healthRecords = store.recordsOfType("health");
+
+  const page = document.createDocumentFragment();
+
+  page.append(pageHeading(t("view.labs"),
+    ru() ? "Результаты, осмотры и лекарства — с историей по каждому показателю."
+         : "Results, check-ups and medication — with a history for every analyte.",
+    [el("button", { class: "ghost-button", type: "button", text: `＋ ${typeLabel("health")}`,
+                    onclick: () => openRecordForm("health", null, { onSaved: refresh }) }),
+     el("button", { class: "primary-button", type: "button", text: `＋ ${t("health.pasteLab")}`,
+                    onclick: () => openLabPaste({ onDone: refresh }) })]));
+
+  page.append(el("div", { class: "segmented wide" }, [
+    labTab("analytes", `${t("health.labs")} (${new Set(labs.map((record) => record.name)).size})`),
+    labTab("records", `${typeLabel("health")} (${healthRecords.length})`)
+  ]));
+
+  page.append(labState.tab === "records" ? medicalRecordsPanel() : labsPanel());
+  return page;
+
+  function labTab(value, label) {
+    return el("button", {
+      class: `seg-button${labState.tab === value ? " selected" : ""}`, type: "button", text: label,
+      onclick: () => { labState.tab = value; refresh(); }
+    });
+  }
+
+  function medicalRecordsPanel() {
+    return panel("records-panel",
+      panelHeader(ru() ? "ОСМОТРЫ И ЛЕКАРСТВА" : "CHECK-UPS AND MEDICATION",
+        ru() ? "Клинический контекст" : "Clinical context"),
+      recordList("medical-records", sortByDate(healthRecords), {
+        empty: ru() ? "Добавьте осмотр, лекарство, диагноз или прививку." : "Add a check-up, medication, diagnosis or vaccination.",
+        addType: "health"
+      }),
+      el("p", { class: "panel-note", text: t("health.notDiagnosis") }));
   }
 
   /* ---------- Lab results, organised by analyte ---------- */
@@ -321,10 +363,10 @@ export function healthView() {
           t("health.pasteLab"), () => openLabPaste({ onDone: refresh })));
     }
 
-    const query = healthState.labQuery.trim().toLowerCase();
+    const query = labState.query.trim().toLowerCase();
     const filtered = groups.filter((group) => {
-      if (healthState.labPanel !== "all" && group.category !== healthState.labPanel) return false;
-      if (healthState.labOnlyOff && !["above", "below"].includes(group.verdict)) return false;
+      if (labState.panel !== "all" && group.category !== labState.panel) return false;
+      if (labState.onlyOff && !["above", "below"].includes(group.verdict)) return false;
       return !query || group.name.toLowerCase().includes(query);
     });
 
@@ -347,9 +389,9 @@ export function healthView() {
     ]));
 
     const search = el("input", {
-      class: "form-control", type: "search", value: healthState.labQuery,
+      class: "form-control", type: "search", value: labState.query,
       placeholder: ru() ? "Найти показатель — гемоглобин, ферритин…" : "Find an analyte…",
-      oninput: (event) => { healthState.labQuery = event.target.value; renderList(); }
+      oninput: (event) => { labState.query = event.target.value; renderList(); }
     });
 
     const usedPanels = [...new Set(groups.map((group) => group.category))];
@@ -359,22 +401,22 @@ export function healthView() {
         value: key, label: categoryLabel("lab", key),
         count: groups.filter((group) => group.category === key).length
       }))
-    ], healthState.labPanel, (value) => { healthState.labPanel = value; refresh(); });
+    ], labState.panel, (value) => { labState.panel = value; refresh(); });
 
     const onlyOff = el("label", { class: "switch-row" }, [
       el("input", {
-        type: "checkbox", checked: healthState.labOnlyOff ? "checked" : null,
-        onchange: (event) => { healthState.labOnlyOff = event.target.checked; refresh(); }
+        type: "checkbox", checked: labState.onlyOff ? "checked" : null,
+        onchange: (event) => { labState.onlyOff = event.target.checked; refresh(); }
       }),
       el("span", { text: ru() ? `Только вне нормы (${offCount})` : `Only out of range (${offCount})` })
     ]);
 
     const list = el("div", { class: "analyte-list" });
     const renderList = () => {
-      const q = healthState.labQuery.trim().toLowerCase();
+      const q = labState.query.trim().toLowerCase();
       const shown = groups.filter((group) => {
-        if (healthState.labPanel !== "all" && group.category !== healthState.labPanel) return false;
-        if (healthState.labOnlyOff && !["above", "below"].includes(group.verdict)) return false;
+        if (labState.panel !== "all" && group.category !== labState.panel) return false;
+        if (labState.onlyOff && !["above", "below"].includes(group.verdict)) return false;
         return !q || group.name.toLowerCase().includes(q);
       });
       list.replaceChildren(...(shown.length

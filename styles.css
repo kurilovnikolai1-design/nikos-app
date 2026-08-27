@@ -725,6 +725,19 @@ button.metric-card:hover { border-color: var(--border-strong); }
   .day-chip small { font-size: 11px; }
 }
 
+.flagged-strip { display: flex; gap: 7px; flex-wrap: wrap; }
+.flagged-chip {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-2);
+  border-left-width: 2px; text-align: left; max-width: 100%;
+}
+.flagged-chip.above { border-left-color: var(--red); }
+.flagged-chip.below { border-left-color: var(--cyan); }
+.flagged-chip:hover { border-color: var(--border-strong); }
+.flagged-chip strong { font-size: var(--step-xs); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.flagged-chip small { color: var(--amber); font: 500 var(--step-xs)/1 var(--mono); }
+
 /* ------------------------------------------------------------- analytes */
 
 /* The laboratory's own organising idea: one row per test, its history inside.
