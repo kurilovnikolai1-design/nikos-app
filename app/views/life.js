@@ -1,25 +1,25 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-100955";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-101457";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-100955";
-import { formatMoney } from "../money.js?v=20260827-100955";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-100955";
-import { categoriesOf } from "../schema.js?v=20260827-100955";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-100955";
-import { openRecordForm } from "../form.js?v=20260827-100955";
-import { navigate } from "../router.js?v=20260827-100955";
-import { importCsv } from "../csv.js?v=20260827-100955";
-import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-100955";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-100955";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-100955";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-100955";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-100955";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-100955";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-100955";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-100955";
-import * as store from "../store.js?v=20260827-100955";
-import * as records from "../records.js?v=20260827-100955";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-101457";
+import { formatMoney } from "../money.js?v=20260827-101457";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-101457";
+import { categoriesOf } from "../schema.js?v=20260827-101457";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-101457";
+import { openRecordForm } from "../form.js?v=20260827-101457";
+import { navigate } from "../router.js?v=20260827-101457";
+import { importCsv } from "../csv.js?v=20260827-101457";
+import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-101457";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-101457";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-101457";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-101457";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-101457";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-101457";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-101457";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-101457";
+import * as store from "../store.js?v=20260827-101457";
+import * as records from "../records.js?v=20260827-101457";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -401,7 +401,7 @@ export function labsView() {
             onclick: () => openAnalyte(group)
           })))
         ]))),
-        el("p", { class: "panel-note", text: ru() ? ROUTING_NOTE.ru : ROUTING_NOTE.en }));
+        el("p", { class: "panel-note", text: ru() ? ROUTING_NOTE.ru : ROUTING_NOTE.en })));
     }
 
     const observations = labInsights(all, { locale: getLocale() });
