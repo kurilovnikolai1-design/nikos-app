@@ -6,18 +6,18 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-054122";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-054122";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-054122";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-054122";
-import { COINS } from "./rates.js?v=20260827-054122";
-import * as store from "./store.js?v=20260827-054122";
-import * as records from "./records.js?v=20260827-054122";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-055819";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-055819";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-055819";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-055819";
+import { COINS } from "./rates.js?v=20260827-055819";
+import * as store from "./store.js?v=20260827-055819";
+import * as records from "./records.js?v=20260827-055819";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
 const ESSENTIAL = new Set(["name", "category", "amount", "currency", "date", "counterparty", "coin", "quantity",
-  "value", "duration", "distance", "status", "dueTime", "dueDate", "details"]);
+  "value", "unit", "refLow", "refHigh", "duration", "distance", "status", "dueTime", "dueDate", "details"]);
 
 const PLACEHOLDER = {
   name: { task: ["Например: позвонить подрядчику", "e.g. Call the contractor"],
@@ -32,6 +32,7 @@ const PLACEHOLDER = {
           health: ["Например: годовой чекап", "e.g. Annual check-up"],
           document: ["Например: выписка ЕГРН.pdf", "e.g. Title deed.pdf"],
           person: ["Например: Игорь, подрядчик", "e.g. Igor, contractor"],
+          lab: ["Например: Гемоглобин", "e.g. Haemoglobin"],
           decision: ["Например: продавать ли участок", "e.g. Sell the land or keep it"],
           default: ["Название записи", "Record name"] },
   counterparty: ["Например: Т-Банк, Игорь, Jetlend", "e.g. T-Bank, Igor, Jetlend"],
@@ -132,7 +133,7 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         }, categoriesOf(type).map((item) => option(item.key, categoryLabel(type, item.key), item.key === draft.category))), { error });
 
       case "counterparty":
-        return field(t("form.counterparty"), el("input", {
+        return field(type === "lab" ? t("form.lab") : t("form.counterparty"), el("input", {
           class: "form-control", type: "text", value: draft.counterparty || "", placeholder: pick(PLACEHOLDER.counterparty),
           oninput: (event) => set("counterparty", event.target.value)
         }), { error });
@@ -174,10 +175,28 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         }), { error, wide: true });
 
       case "value":
-        return field(measurementLabel(), el("input", {
+        return field(type === "lab" ? t("form.value") : measurementLabel(), el("input", {
           class: "form-control", type: "text", inputmode: "decimal", value: draft.value ?? "",
           oninput: (event) => set("value", event.target.value.replace(",", ".").trim() || null)
         }), { error });
+
+      case "unit":
+        return field(t("form.unit"), el("input", {
+          class: "form-control", type: "text", value: draft.unit || "", placeholder: "ммоль/л",
+          oninput: (event) => set("unit", event.target.value.trim())
+        }), {});
+
+      case "refLow":
+        return field(t("form.refLow"), el("input", {
+          class: "form-control", type: "text", inputmode: "decimal", value: draft.refLow ?? "",
+          oninput: (event) => set("refLow", event.target.value === "" ? null : Number(event.target.value.replace(",", ".")))
+        }), { hint: getLocale() === "ru" ? "Как указано в бланке" : "As printed on the report" });
+
+      case "refHigh":
+        return field(t("form.refHigh"), el("input", {
+          class: "form-control", type: "text", inputmode: "decimal", value: draft.refHigh ?? "",
+          oninput: (event) => set("refHigh", event.target.value === "" ? null : Number(event.target.value.replace(",", ".")))
+        }), {});
 
       case "duration":
         return field(t("form.duration"), numberInput("duration", { min: 0, max: 1440 }), { error });
@@ -457,7 +476,8 @@ function subtitleFor(type) {
     workout: ["Что сделали, сколько и как себя чувствовали.", "What you did, how much, and how it felt."],
     measurement: ["Один показатель за одну дату.", "One measurement for one date."],
     health: ["Контекст, а не диагноз.", "Context, not diagnosis."],
-    document: ["Сохраняются только имя и размер файла — сам файл никуда не уходит.", "Only the file name and size are stored — the file never leaves your device."]
+    document: ["Сохраняются только имя и размер файла — сам файл никуда не уходит.", "Only the file name and size are stored — the file never leaves your device."],
+    lab: ["Значение без единицы и нормы ничего не значит — впишите их из бланка.", "A value means nothing without its unit and range — copy them from the report."]
   };
   return hints[type] ? pick(hints[type]) : "";
 }

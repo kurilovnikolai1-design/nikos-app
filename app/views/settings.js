@@ -1,17 +1,17 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-054122";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-054122";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-054122";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-054122";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-054122";
-import * as lock from "../lock.js?v=20260827-054122";
-import * as persist from "../persist.js?v=20260827-054122";
-import * as store from "../store.js?v=20260827-054122";
-import * as records from "../records.js?v=20260827-054122";
-import * as cloud from "../cloud.js?v=20260827-054122";
-import { refreshRates } from "../main-rates.js?v=20260827-054122";
-import { loadDemoData } from "../demo.js?v=20260827-054122";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-055819";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-055819";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-055819";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-055819";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-055819";
+import * as lock from "../lock.js?v=20260827-055819";
+import * as persist from "../persist.js?v=20260827-055819";
+import * as store from "../store.js?v=20260827-055819";
+import * as records from "../records.js?v=20260827-055819";
+import * as cloud from "../cloud.js?v=20260827-055819";
+import { refreshRates } from "../main-rates.js?v=20260827-055819";
+import { loadDemoData } from "../demo.js?v=20260827-055819";
 
 const ru = () => getLocale() === "ru";
 
@@ -474,7 +474,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-054122");
+                       const suite = await import("../selftest.js?v=20260827-055819");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

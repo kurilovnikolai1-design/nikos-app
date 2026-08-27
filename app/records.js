@@ -6,10 +6,10 @@
       localStorage and Supabase in one unconfirmed click.
    2. Nothing is saved until safety.inspectRecord() clears it. */
 
-import * as store from "./store.js?v=20260827-054122";
-import { inspectRecord } from "./safety.js?v=20260827-054122";
-import { parseAmount } from "./money.js?v=20260827-054122";
-import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-054122";
+import * as store from "./store.js?v=20260827-055819";
+import { inspectRecord } from "./safety.js?v=20260827-055819";
+import { parseAmount } from "./money.js?v=20260827-055819";
+import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-055819";
 
 export const TRASH_DAYS = 30;
 
@@ -28,6 +28,9 @@ export function blankRecord(type) {
     coin: "",
     walletAddress: "",
     value: null,
+    unit: "",
+    refLow: null,
+    refHigh: null,
     duration: null,
     distance: null,
     intensity: null,
@@ -81,7 +84,8 @@ export function validate(record) {
       errors.push({ field, key: "form.required" });
     }
   }
-  if (record.type === "measurement" && (record.value === null || record.value === undefined || record.value === "")) {
+  if ((record.type === "measurement" || record.type === "lab")
+      && (record.value === null || record.value === undefined || record.value === "")) {
     errors.push({ field: "value", key: "form.required" });
   }
   if (record.ownershipPercent !== null && record.ownershipPercent !== undefined

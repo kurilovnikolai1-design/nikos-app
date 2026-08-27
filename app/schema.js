@@ -224,6 +224,20 @@ export const TYPES = {
                  c("strain", "Нагрузка", "Strain"), c("steps", "Шаги", "Steps"), c("pressure", "Давление", "Blood pressure"), c("other", "Другое", "Other")]
   },
 
+  lab: {
+    view: "health", icon: "⚗", role: BALANCE_ROLE.NONE, sensitive: true,
+    title: { ru: "Анализ", en: "Lab result" },
+    plural: { ru: "Анализы", en: "Lab results" },
+    fields: ["name", "category", "value", "unit", "refLow", "refHigh", "date", "counterparty",
+             "status", "owner", "source", "reminderDate", "linked", "details"],
+    statuses: ["unverified", "confirmed", "archived"], defaultStatus: "unverified",
+    categories: [c("blood", "Общий анализ крови", "Blood count"), c("biochem", "Биохимия", "Biochemistry"),
+                 c("hormones", "Гормоны", "Hormones"), c("vitamins", "Витамины и минералы", "Vitamins & minerals"),
+                 c("lipids", "Липидный профиль", "Lipids"), c("urine", "Моча", "Urine"),
+                 c("thyroid", "Щитовидная железа", "Thyroid"), c("markers", "Маркеры", "Markers"),
+                 c("other", "Другое", "Other")]
+  },
+
   /* ---------- Thinking ---------- */
   decision: {
     view: "decisions", icon: "◆", role: BALANCE_ROLE.NONE,

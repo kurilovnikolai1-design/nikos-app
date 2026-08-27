@@ -2,12 +2,13 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-054122";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-054122";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-054122";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-054122";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-054122";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-054122";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-055819";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-055819";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-055819";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-055819";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-055819";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-055819";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-055819";
 
 const VIEWS = ["command", "inbox", "tasks", "projects", "capital", "debts", "cashflow", "investments",
   "crypto", "assets", "health", "documents", "people", "decisions", "timeline", "settings"];
@@ -159,6 +160,41 @@ const migratedWorth = netWorth(migrated, "RUB", RATES);
 check("после миграции ничего не потеряно",
   migratedWorth.counted.length + migratedWorth.excludedCount + migrated.filter((r) => !["account", "receivable", "payable", "investment", "crypto", "asset"].includes(r.type)).length === migrated.length);
 
+/* ---------- Lab reports ---------- */
+
+const LAB_SAMPLE = `Инвитро
+Дата взятия: 12.08.2026
+Наименование            Результат   Единицы     Референсные значения
+Гемоглобин                  148     г/л         130 - 160
+Эритроциты                 4,85     10^12/л     4,00 - 5,10
+Лейкоциты                   9,8     10^9/л      4,0 - 9,0
+Витамин D (25-OH)          22,5     нг/мл       30 - 100
+Холестерин общий            6,2     ммоль/л     менее 5,2
+Витамин B12                 310     пг/мл       191 - 663
+Тестостерон общий         18,40     нмоль/л     8,64 - 29,00`;
+
+const lab = parseLabText(LAB_SAMPLE);
+const analyte = (name) => lab.find((row) => row.name === name);
+
+check("разбор анализов: все строки", lab.length === 7, `${lab.length}/7`);
+check("заголовки не попали в результат", !lab.some((row) => /наименование|референс/i.test(row.name)));
+check("название с цифрами", Boolean(analyte("Витамин D (25-OH)")), "«Витамин D (25-OH)» читалось как значение 25");
+check("название с цифрами в конце", Boolean(analyte("Витамин B12")));
+check("значение с запятой", analyte("Эритроциты")?.value === 4.85);
+check("единица распознана", analyte("Гемоглобин")?.unit === "г/л");
+check("сложная единица", analyte("Эритроциты")?.unit === "10^12/л");
+check("норма распознана", analyte("Гемоглобин")?.refLow === 130 && analyte("Гемоглобин")?.refHigh === 160);
+check("открытая норма «менее»", analyte("Холестерин общий")?.refHigh === 5.2 && analyte("Холестерин общий")?.refLow === null);
+check("панель по названию", analyte("Тестостерон общий")?.category === "hormones");
+check("дата из бланка", guessDate(LAB_SAMPLE) === "2026-08-12");
+check("лаборатория из бланка", guessLab(LAB_SAMPLE) === "Инвитро");
+
+check("выше нормы", rangeVerdict(analyte("Лейкоциты")) === "above");
+check("ниже нормы", rangeVerdict(analyte("Витамин D (25-OH)")) === "below");
+check("в норме", rangeVerdict(analyte("Гемоглобин")) === "in");
+check("без нормы — без вердикта", rangeVerdict({ value: 5, refLow: null, refHigh: null }) === null);
+check("граница нормы считается нормой", rangeVerdict({ value: 160, refLow: 130, refHigh: 160 }) === "in");
+
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };
 
@@ -178,4 +214,6 @@ if (typeof process !== "undefined" && process.argv?.[1]?.includes("selftest")) {
   console.log("  долги:         ", formatMoney(worth.buckets.liability, "RUB", "ru"));
   console.log("  исключено:     ", worth.excludedCount, "| уверенность:", worth.confidence + "%");
   console.log("  поток за месяц:", formatMoney(flow.netMinor, "RUB", "ru"));
+  console.log("  анализов разобрано:", lab.length, "| вне нормы:",
+    lab.filter((row) => ["above", "below"].includes(rangeVerdict(row))).length);
 }

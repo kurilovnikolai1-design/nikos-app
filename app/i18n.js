@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-054122";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-055819";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -208,6 +208,10 @@ const DICT = {
   "form.intensity": { ru: "Интенсивность 1–10", en: "Intensity 1–10" },
   "form.feeling": { ru: "Самочувствие 1–5", en: "How it felt 1–5" },
   "form.value": { ru: "Значение", en: "Value" },
+  "form.unit": { ru: "Единица", en: "Unit" },
+  "form.refLow": { ru: "Норма от", en: "Reference low" },
+  "form.refHigh": { ru: "Норма до", en: "Reference high" },
+  "form.lab": { ru: "Лаборатория", en: "Laboratory" },
   "form.required": { ru: "Заполните это поле", en: "This field is required" },
   "form.optional": { ru: "необязательно", en: "optional" },
   "form.amountHint": { ru: "Можно писать «1 500», «1,5к» или «2м»", en: "You can type 1 500, 1.5k or 2m" },
@@ -260,6 +264,18 @@ const DICT = {
   "health.days": { ru: "дней", en: "days" },
   "health.lastWorkout": { ru: "Последняя тренировка", en: "Last workout" },
   "health.importCsv": { ru: "Импорт CSV", en: "Import CSV" },
+  "health.addLab": { ru: "Добавить анализы", en: "Add lab results" },
+  "health.pasteLab": { ru: "Вставить из PDF", en: "Paste from a PDF" },
+  "health.pasteLabHint": { ru: "Откройте PDF из лаборатории, выделите таблицу с результатами, скопируйте и вставьте сюда. Текст никуда не отправляется — разбор идёт в вашем браузере.", en: "Open the lab PDF, select the results table, copy it and paste it here. The text is not sent anywhere — parsing happens in your browser." },
+  "health.labParsed": { ru: "Распознано показателей", en: "Values recognised" },
+  "health.labNothing": { ru: "Не удалось распознать ни одной строки. Проверьте, что скопирована таблица с результатами.", en: "No rows were recognised. Check that you copied the results table." },
+  "health.outOfRange": { ru: "вне нормы", en: "out of range" },
+  "health.aboveRange": { ru: "выше нормы", en: "above range" },
+  "health.belowRange": { ru: "ниже нормы", en: "below range" },
+  "health.inRange": { ru: "в норме", en: "in range" },
+  "health.labs": { ru: "Анализы", en: "Lab results" },
+  "health.labDate": { ru: "Дата сдачи", en: "Sample date" },
+  "health.notDiagnosis": { ru: "Nik'Os сравнивает ваши цифры с нормами, указанными самой лабораторией. Это не диагноз и не замена врачу.", en: "Nik'Os compares your numbers with the reference ranges printed by the laboratory itself. This is not a diagnosis and not a substitute for a doctor." },
 
   /* Security */
   "sec.lockTitle": { ru: "Nik'Os заперт", en: "Nik'Os is locked" },

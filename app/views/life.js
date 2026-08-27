@@ -1,16 +1,17 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-054122";
+import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-055819";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-054122";
-import { formatMoney } from "../money.js?v=20260827-054122";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-054122";
-import { categoriesOf } from "../schema.js?v=20260827-054122";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-054122";
-import { openRecordForm } from "../form.js?v=20260827-054122";
-import { importCsv } from "../csv.js?v=20260827-054122";
-import * as store from "../store.js?v=20260827-054122";
-import * as records from "../records.js?v=20260827-054122";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-055819";
+import { formatMoney } from "../money.js?v=20260827-055819";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-055819";
+import { categoriesOf } from "../schema.js?v=20260827-055819";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-055819";
+import { openRecordForm } from "../form.js?v=20260827-055819";
+import { importCsv } from "../csv.js?v=20260827-055819";
+import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-055819";
+import * as store from "../store.js?v=20260827-055819";
+import * as records from "../records.js?v=20260827-055819";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -71,12 +72,17 @@ export function healthView() {
   const workouts = store.recordsOfType("workout");
   const measurements = store.recordsOfType("measurement");
   const healthRecords = store.recordsOfType("health");
+  const labs = store.recordsOfType("lab");
+  const panels = labPanels(labs);
+  const flagged = panels.flatMap((panel) => panel.outOfRange);
 
   const page = document.createDocumentFragment();
 
   page.append(pageHeading(t("view.health"),
     t("health.contextNotDiagnosis"),
-    [el("button", { class: "ghost-button", type: "button", text: `＋ ${t("health.logMeasurement")}`,
+    [el("button", { class: "ghost-button", type: "button", text: `＋ ${t("health.pasteLab")}`,
+                    onclick: () => openLabPaste({ onDone: refresh }) }),
+     el("button", { class: "ghost-button", type: "button", text: `＋ ${t("health.logMeasurement")}`,
                     onclick: () => openRecordForm("measurement", null, { onSaved: refresh }) }),
      addButton("workout", t("health.logWorkout"), refresh)]));
 
@@ -124,6 +130,7 @@ export function healthView() {
 
   page.append(el("div", { class: "segmented wide" }, [
     tab("sport", `${t("health.workouts")} (${workouts.length})`),
+    tab("labs", `${t("health.labs")} (${labs.length})`),
     tab("measurements", `${typePlural("measurement")} (${measurements.length})`),
     tab("records", `${typeLabel("health")} (${healthRecords.length})`)
   ]));
@@ -135,6 +142,8 @@ export function healthView() {
         empty: ru() ? "Запишите первую тренировку — зал, бег, что угодно." : "Log your first workout.",
         addType: "workout"
       })));
+  } else if (healthState.tab === "labs") {
+    page.append(labsPanel());
   } else if (healthState.tab === "measurements") {
     page.append(panel("records-panel",
       panelHeader(ru() ? "ПОКАЗАТЕЛИ" : "MEASUREMENTS", "",
@@ -164,6 +173,73 @@ export function healthView() {
       class: `seg-button${healthState.tab === value ? " selected" : ""}`, type: "button", text: label,
       onclick: () => { healthState.tab = value; refresh(); }
     });
+  }
+
+  function labsPanel() {
+    if (!panels.length) {
+      return panel("records-panel",
+        panelHeader(ru() ? "АНАЛИЗЫ" : "LAB RESULTS", ru() ? "Результаты из лаборатории" : "Results from the laboratory"),
+        emptyState(ru()
+          ? "Откройте PDF из лаборатории, скопируйте таблицу с результатами и вставьте — Nik'Os разберёт её сам."
+          : "Open the lab PDF, copy the results table and paste it — Nik'Os will parse it.",
+          t("health.pasteLab"), () => openLabPaste({ onDone: refresh })));
+    }
+
+    const host = document.createDocumentFragment();
+
+    if (flagged.length) {
+      host.append(panel("records-panel lab-flagged",
+        panelHeader(ru() ? "ВНЕ НОРМЫ" : "OUT OF RANGE",
+          ru() ? "На что посмотреть с врачом" : "Worth reviewing with a doctor",
+          el("span", { class: "security-badge", text: String(flagged.length) })),
+        el("div", { class: "lab-table" }, flagged
+          .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+          .slice(0, 12).map(labLine)),
+        el("p", { class: "panel-note", text: t("health.notDiagnosis") })));
+    }
+
+    for (const group of panels.slice(0, 8)) {
+      host.append(panel("records-panel",
+        panelHeader(formatDate(group.date, "long").toUpperCase(),
+          group.lab || (ru() ? "Лаборатория не указана" : "Laboratory not recorded"),
+          el("span", { class: "muted-text", text: group.outOfRange.length
+            ? `${group.outOfRange.length} ${t("health.outOfRange")}`
+            : t("health.inRange") })),
+        el("div", { class: "lab-table" }, group.items.map(labLine))));
+    }
+
+    return host;
+  }
+
+  /* One analyte row: value, unit, the laboratory's own range, and a trend when
+     the same test has been taken before. */
+  function labLine(record) {
+    const verdict = rangeVerdict(record);
+    const history = analyteHistory(store.liveRecords(), record.name);
+    const previous = history.length > 1 ? history[history.findIndex((h) => h.record.id === record.id) - 1] : null;
+    const delta = previous ? Number(record.value) - previous.value : null;
+
+    return el("button", {
+      class: `lab-line${verdict && verdict !== "in" ? ` off ${verdict}` : ""}`, type: "button",
+      onclick: () => openRecordForm("lab", record, { onSaved: refresh })
+    }, [
+      el("span", { class: "lab-line-name" }, [
+        el("strong", { text: record.name }),
+        el("small", { text: [categoryLabel("lab", record.category), record.counterparty].filter(Boolean).join(" · ") })
+      ]),
+      history.length > 1 ? sparkline(history.slice(-12), { tone: verdict && verdict !== "in" ? "amber" : "cyan" }) : null,
+      el("span", { class: "lab-line-value" }, [
+        el("b", { text: `${formatNumber(record.value, 2)}${record.unit ? ` ${record.unit}` : ""}` }),
+        delta !== null && Math.abs(delta) > 1e-9
+          ? el("small", { class: "lab-delta", text: `${delta > 0 ? "+" : ""}${formatNumber(delta, 2)}` })
+          : null
+      ]),
+      el("span", { class: "lab-line-ref" }, [
+        el("small", { text: record.refLow !== null || record.refHigh !== null
+          ? `${record.refLow ?? "—"} – ${record.refHigh ?? "—"}` : "—" }),
+        verdict && verdict !== "in" ? el("em", { text: verdictLabel(verdict) }) : null
+      ])
+    ]);
   }
 }
 
