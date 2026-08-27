@@ -5,8 +5,8 @@
    merged by updatedAt, and a delete is synced as a soft delete so a device
    that has been offline cannot resurrect a removed record. */
 
-import { t, getLocale } from "./i18n.js?v=20260827-061621";
-import * as store from "./store.js?v=20260827-061621";
+import { t, getLocale } from "./i18n.js?v=20260827-062702";
+import * as store from "./store.js?v=20260827-062702";
 
 const CONFIG_KEY = "nikos-cloud-config";
 const CONSENT_KEY = "nikos-cloud-consent";
@@ -47,7 +47,7 @@ function loadLibrary() {
   if (libraryPromise) return libraryPromise;
   libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "vendor/supabase.js?v=20260827-061621";
+    script.src = "vendor/supabase.js?v=20260827-062702";
     script.async = true;
     script.onload = () => (globalThis.supabase?.createClient ? resolve(globalThis.supabase) : reject(new Error("supabase missing")));
     script.onerror = () => reject(new Error("supabase failed to load"));
@@ -175,6 +175,18 @@ export async function syncAll() {
   announce("connected");
   return { ok: true, pulled, pushed: union.length };
 }
+
+/* The WHOOP integration needs the owner's Supabase session to prove who is
+   asking, and the project URL to reach the function. Both come from here so
+   there is one place that knows about the connection. */
+export async function accessToken() {
+  if (!client) return null;
+  const { data } = await client.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
+export const projectUrl = () => (loadConfig()?.url || "").replace(/\/$/, "");
+export const functionsUrl = (name) => (projectUrl() ? `${projectUrl()}/functions/v1/${name}` : null);
 
 export function statusLabel(state) {
   const ru = getLocale() === "ru";

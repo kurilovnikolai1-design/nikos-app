@@ -1,17 +1,18 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-061621";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-061621";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-061621";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-061621";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-061621";
-import * as lock from "../lock.js?v=20260827-061621";
-import * as persist from "../persist.js?v=20260827-061621";
-import * as store from "../store.js?v=20260827-061621";
-import * as records from "../records.js?v=20260827-061621";
-import * as cloud from "../cloud.js?v=20260827-061621";
-import { refreshRates } from "../main-rates.js?v=20260827-061621";
-import { loadDemoData } from "../demo.js?v=20260827-061621";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-062702";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-062702";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-062702";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-062702";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-062702";
+import * as lock from "../lock.js?v=20260827-062702";
+import * as persist from "../persist.js?v=20260827-062702";
+import * as store from "../store.js?v=20260827-062702";
+import * as records from "../records.js?v=20260827-062702";
+import * as cloud from "../cloud.js?v=20260827-062702";
+import { refreshRates } from "../main-rates.js?v=20260827-062702";
+import { loadDemoData } from "../demo.js?v=20260827-062702";
+import { whoopRow } from "../whoop.js?v=20260827-062702";
 
 const ru = () => getLocale() === "ru";
 
@@ -26,6 +27,7 @@ export function settingsView() {
   page.append(moneyPanel());
   page.append(backupPanel());
   page.append(cloudPanel());
+  page.append(integrationsPanel());
   page.append(appearancePanel());
   page.append(trashPanel());
   page.append(diagnosticsPanel());
@@ -394,6 +396,18 @@ export function settingsView() {
         : "Run supabase/schema.sql in your project SQL editor before connecting for the first time." }));
   }
 
+  /* ---------- Integrations ---------- */
+
+  function integrationsPanel() {
+    return panel("settings-panel",
+      panelHeader(ru() ? "ИСТОЧНИКИ" : "SOURCES",
+        ru() ? "Данные, которые приходят сами" : "Data that arrives on its own"),
+      el("div", { class: "setting-rows" }, [whoopRow(refresh)]),
+      el("p", { class: "panel-note", text: ru()
+        ? "Доступ только на чтение. Токены хранятся на сервере вашего проекта Supabase и в браузер не попадают."
+        : "Read-only access. Tokens live in your own Supabase project and never reach the browser." }));
+  }
+
   /* ---------- Appearance ---------- */
 
   function appearancePanel() {
@@ -474,7 +488,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-061621");
+                       const suite = await import("../selftest.js?v=20260827-062702");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

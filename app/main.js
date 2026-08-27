@@ -1,25 +1,26 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-061621";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-062702";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-061621";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-061621";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-061621";
-import { buildAttention } from "./attention.js?v=20260827-061621";
-import { refresh, recordRow } from "./render.js?v=20260827-061621";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-061621";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-061621";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-061621";
-import * as lock from "./lock.js?v=20260827-061621";
-import * as persist from "./persist.js?v=20260827-061621";
-import * as store from "./store.js?v=20260827-061621";
-import * as records from "./records.js?v=20260827-061621";
-import * as cloud from "./cloud.js?v=20260827-061621";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-062702";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-062702";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-062702";
+import { buildAttention } from "./attention.js?v=20260827-062702";
+import { refresh, recordRow } from "./render.js?v=20260827-062702";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-062702";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-062702";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-062702";
+import * as lock from "./lock.js?v=20260827-062702";
+import * as persist from "./persist.js?v=20260827-062702";
+import * as store from "./store.js?v=20260827-062702";
+import * as records from "./records.js?v=20260827-062702";
+import * as cloud from "./cloud.js?v=20260827-062702";
+import * as whoop from "./whoop.js?v=20260827-062702";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-061621";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-061621";
-import { assetsView, healthView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-061621";
-import { settingsView } from "./views/settings.js?v=20260827-061621";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-062702";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-062702";
+import { assetsView, healthView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-062702";
+import { settingsView } from "./views/settings.js?v=20260827-062702";
 
 const ru = () => getLocale() === "ru";
 
@@ -398,7 +399,7 @@ async function boot() {
         : `${store.allRecords().length} records migrated from the previous version`, { tone: "success", duration: 6000 });
     }
     scheduleRateRefresh();
-    void cloud.restore();
+    void cloud.restore().then(() => whoop.handleReturn(() => render()));
   }
 
   store.subscribe((_state, reason) => {
