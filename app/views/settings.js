@@ -1,18 +1,18 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-115943";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-115943";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-115943";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-115943";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-115943";
-import * as lock from "../lock.js?v=20260827-115943";
-import * as persist from "../persist.js?v=20260827-115943";
-import * as store from "../store.js?v=20260827-115943";
-import * as records from "../records.js?v=20260827-115943";
-import * as cloud from "../cloud.js?v=20260827-115943";
-import { refreshRates } from "../main-rates.js?v=20260827-115943";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-115943";
-import { whoopRow } from "../whoop.js?v=20260827-115943";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-121326";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-121326";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-121326";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-121326";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-121326";
+import * as lock from "../lock.js?v=20260827-121326";
+import * as persist from "../persist.js?v=20260827-121326";
+import * as store from "../store.js?v=20260827-121326";
+import * as records from "../records.js?v=20260827-121326";
+import * as cloud from "../cloud.js?v=20260827-121326";
+import { refreshRates } from "../main-rates.js?v=20260827-121326";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-121326";
+import { whoopRow } from "../whoop.js?v=20260827-121326";
 
 const ru = () => getLocale() === "ru";
 
@@ -490,6 +490,22 @@ export function settingsView() {
         : "Connects your own Supabase project. Records are protected by row-level security scoped to your account; the password is never stored." }),
       connected
         ? el("div", { class: "setting-rows" }, [
+            /* What is still owed to the cloud. Without this the owner has no
+               way to tell a finished sync from one that never ran. */
+            settingRow("⇅", ru() ? "Не отправлено" : "Waiting to upload",
+              (() => {
+                const pending = cloud.pendingCount();
+                const last = cloud.lastPushedAt();
+                if (pending) {
+                  return ru()
+                    ? `${pending} ${plural(pending, PLURALS.record)} — отправятся сами`
+                    : `${pending} records — will upload on their own`;
+                }
+                return last
+                  ? (ru() ? `Всё отправлено, последняя запись ${formatDate(last.slice(0, 10), "medium")}`
+                          : `All uploaded, latest ${formatDate(last.slice(0, 10), "medium")}`)
+                  : (ru() ? "Всё отправлено" : "All uploaded");
+              })()),
             settingRow("☁", ru() ? "Подключено как" : "Connected as", cloud.currentUserEmail() || "",
               el("div", { class: "row-actions" }, [
                 el("button", { class: "small-button", type: "button", text: ru() ? "Синхронизировать" : "Sync now",
@@ -610,7 +626,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-115943");
+                       const suite = await import("../selftest.js?v=20260827-121326");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

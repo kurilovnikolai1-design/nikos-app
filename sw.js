@@ -17,7 +17,7 @@
    online; offline still works because every response is cached on the way
    through. BUILD is stamped at publish time, which also purges old caches. */
 
-const BUILD = "20260827-115943";
+const BUILD = "20260827-121326";
 const CACHE = `nikos-shell-${BUILD}`;
 
 const APP_SHELL = [
@@ -54,6 +54,7 @@ const APP_SHELL = [
   "./app/lab-routing.js",
   "./app/conditions.js",
   "./app/resolved.js",
+  "./app/attachments.js",
   "./app/lab-descriptions.js",
   "./app/cloud.js",
   "./app/whoop.js",

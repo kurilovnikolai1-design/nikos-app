@@ -57,6 +57,10 @@ const run = async (mode, work) => {
 };
 
 export const get = (key) => run("readonly", (store) => store.get(key));
+/* Attachments live in this same store under a "file:" prefix rather than in a
+   store of their own: adding one would need a version bump, and a failed
+   upgrade is a way to lose a vault. Listing keys is enough to find them. */
+export const keys = () => run("readonly", (store) => store.getAllKeys());
 export const put = (key, value) => run("readwrite", (store) => store.put(value, key));
 export const remove = (key) => run("readwrite", (store) => store.delete(key));
 

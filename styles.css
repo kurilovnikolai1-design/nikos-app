@@ -892,6 +892,20 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .analyte-actions { display: grid; gap: 6px; justify-items: start; }
 .analyte-actions small { color: var(--faint); font-size: var(--step-xs); }
 
+/* An attached file, once it is genuinely stored. */
+.attachment-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  margin-top: 8px; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.attachment-name {
+  font-weight: 600; font-size: var(--step-sm);
+  overflow-wrap: anywhere; min-width: 0; flex: 1 1 140px;
+}
+.attachment-row small { color: var(--faint); font-size: var(--step-xs); }
+.text-button.danger { color: var(--danger, #d9534f); }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

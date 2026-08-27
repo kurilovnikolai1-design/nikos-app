@@ -6,14 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-115943";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-115943";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-115943";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-115943";
-import { COINS } from "./rates.js?v=20260827-115943";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-115943";
-import * as store from "./store.js?v=20260827-115943";
-import * as records from "./records.js?v=20260827-115943";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-121326";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-121326";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-121326";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-121326";
+import { COINS } from "./rates.js?v=20260827-121326";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-121326";
+import * as store from "./store.js?v=20260827-121326";
+import * as records from "./records.js?v=20260827-121326";
+import * as attachments from "./attachments.js?v=20260827-121326";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -444,23 +445,64 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
   /* Only the file's name, size and type are kept — the file itself is never
      read into storage or sent anywhere. */
   function fileField() {
-    const current = draft.attachment
-      ? el("small", { class: "form-hint", text: `${draft.attachment.name} · ${Math.round(draft.attachment.size / 1024)} KB` })
-      : null;
-    return el("label", { class: "form-field wide" }, [
-      el("span", { class: "form-label", text: t("form.file") }),
-      el("input", {
-        class: "form-control", type: "file",
-        accept: ".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.csv",
-        onchange: (event) => {
-          const file = event.target.files?.[0];
-          set("attachment", file ? { name: file.name, size: file.size, mime: file.type } : null);
-          render();
+    const attachment = draft.attachment;
+
+    /* The bytes are written the moment a file is chosen, not on submit: a form
+       abandoned halfway used to leave a name pointing at nothing, and writing
+       early makes "attached" mean the file is genuinely stored. An abandoned
+       upload becomes an orphan, which attachments.sweep clears later. */
+    const input = el("input", {
+      class: "form-control", type: "file",
+      accept: ".pdf,.png,.jpg,.jpeg,.webp,.heic,.doc,.docx,.xls,.xlsx,.csv,.txt",
+      onchange: async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const saved = await attachments.saveFile(file);
+        if (saved.result !== attachments.RESULT.OK) {
+          toast(saved.result === attachments.RESULT.TOO_LARGE
+            ? t("form.fileTooLarge").replace("{limit}", attachments.describeSize(attachments.MAX_BYTES, getLocale()))
+            : t("form.fileFailed"), { tone: "danger" });
+          event.target.value = "";
+          return;
         }
-      }),
-      current
-    ]);
+
+        if (attachment?.id) await attachments.deleteFile(attachment);
+        set("attachment", saved.attachment);
+        render();
+      }
+    });
+
+    const rows = [
+      el("span", { class: "form-label", text: t("form.file") }),
+      input
+    ];
+
+    if (attachment) {
+      rows.push(el("div", { class: "attachment-row" }, [
+        el("span", { class: "attachment-name", text: attachment.name }),
+        el("small", { text: attachments.describeSize(attachment.size, getLocale()) }),
+        el("button", {
+          class: "text-button", type: "button", text: t("form.fileOpen"),
+          onclick: async () => {
+            const blob = await attachments.loadFile(attachment);
+            if (!blob) { toast(t("form.fileMissing"), { tone: "danger" }); return; }
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank", "noopener");
+            /* Revoking immediately would race the new tab; a minute is plenty. */
+            setTimeout(() => URL.revokeObjectURL(url), 60_000);
+          }
+        }),
+        el("button", {
+          class: "text-button danger", type: "button", text: t("form.fileRemove"),
+          onclick: async () => { await attachments.deleteFile(attachment); set("attachment", null); render(); }
+        })
+      ]));
+    }
+
+    return el("label", { class: "form-field wide" }, rows);
   }
+
 
   async function submit() {
     errors = {};

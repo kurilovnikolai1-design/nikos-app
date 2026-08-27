@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-115943";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-121326";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -198,7 +198,12 @@ const DICT = {
   "form.reminderDate": { ru: "Напомнить", en: "Remind me" },
   "form.linked": { ru: "Связать с записью", en: "Link to a record" },
   "form.noLink": { ru: "Без связи", en: "No link" },
-  "form.file": { ru: "Файл (сохраняются только имя и размер)", en: "File (name and size only)" },
+  "form.file": { ru: "Файл", en: "File" },
+  "form.fileOpen": { ru: "Открыть", en: "Open" },
+  "form.fileRemove": { ru: "Убрать", en: "Remove" },
+  "form.fileMissing": { ru: "Файл не найден. Если стоит PIN — сначала разблокируйте.", en: "File not found. If a PIN is set, unlock first." },
+  "form.fileFailed": { ru: "Не удалось сохранить файл.", en: "Could not store the file." },
+  "form.fileTooLarge": { ru: "Файл больше {limit}. Сожмите или разбейте на части.", en: "The file is larger than {limit}. Compress it or split it." },
   "form.recurrence": { ru: "Повторяется", en: "Repeats" },
   "form.frequency": { ru: "Как часто", en: "How often" },
   "form.nextDue": { ru: "Следующий платёж", en: "Next payment" },

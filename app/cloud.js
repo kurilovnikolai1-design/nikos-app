@@ -5,12 +5,13 @@
    merged by updatedAt, and a delete is synced as a soft delete so a device
    that has been offline cannot resurrect a removed record. */
 
-import { t, getLocale } from "./i18n.js?v=20260827-115943";
-import * as store from "./store.js?v=20260827-115943";
-import { migrateRecord } from "./records.js?v=20260827-115943";
+import { t, getLocale } from "./i18n.js?v=20260827-121326";
+import * as store from "./store.js?v=20260827-121326";
+import { migrateRecord } from "./records.js?v=20260827-121326";
 
 const CONFIG_KEY = "nikos-cloud-config";
 const CONSENT_KEY = "nikos-cloud-consent";
+const PUSHED_KEY = "nikos-cloud-pushed-at";
 const TABLE = "nikos_records";
 
 let client = null;
@@ -48,7 +49,7 @@ function loadLibrary() {
   if (libraryPromise) return libraryPromise;
   libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "vendor/supabase.js?v=20260827-115943";
+    script.src = "vendor/supabase.js?v=20260827-121326";
     script.async = true;
     script.onload = () => (globalThis.supabase?.createClient ? resolve(globalThis.supabase) : reject(new Error("supabase missing")));
     script.onerror = () => reject(new Error("supabase failed to load"));
@@ -135,6 +136,92 @@ const toRow = (record) => ({
   payload: record,
   updated_at: record.updatedAt || new Date().toISOString()
 });
+
+/* ---------- Pushing changes without being asked ---------- */
+
+/* Until now the only way a record reached the cloud was the "Синхронизировать"
+   button in settings. Everything written between two presses of it lived on
+   one device, which is exactly the failure this product exists to prevent:
+   the phone is the primary device and phones get lost.
+   
+   A watermark rather than a dirty list, because a dirty list has to survive a
+   reload and a watermark does not: anything modified after the last confirmed
+   push is, by definition, still owed. It only advances when the write is
+   acknowledged, so an interrupted push is retried rather than lost. */
+
+const watermark = () => {
+  try { return localStorage.getItem(PUSHED_KEY) || ""; } catch { return ""; }
+};
+const setWatermark = (value) => {
+  try { localStorage.setItem(PUSHED_KEY, value); } catch { /* optional */ }
+};
+
+let pushTimer = null;
+let pushing = false;
+let pushAgain = false;
+
+export async function pushChanged() {
+  if (!isConnected() || !hasConsent()) return { ok: true, skipped: true };
+  if (pushing) { pushAgain = true; return { ok: true, queued: true }; }
+
+  const since = watermark();
+  const pending = store.allRecords()
+    .filter((record) => String(record.updatedAt || "") > since)
+    .sort((a, b) => String(a.updatedAt).localeCompare(String(b.updatedAt)));
+
+  if (!pending.length) return { ok: true, nothing: true };
+
+  pushing = true;
+  announce("syncing");
+  try {
+    /* Chunked: a single upsert of a whole history once exceeded the request
+       size limit and failed as a unit, taking the good rows down with it. */
+    const CHUNK = 250;
+    for (let index = 0; index < pending.length; index += CHUNK) {
+      const slice = pending.slice(index, index + CHUNK);
+      const { error } = await client.from(TABLE)
+        .upsert(slice.map(toRow), { onConflict: "user_id,record_id" });
+      if (error) {
+        announce("error", error.message);
+        return { ok: false, message: error.message, pushed: index };
+      }
+      /* Advance per chunk: an interruption halfway keeps the work already done. */
+      setWatermark(String(slice.at(-1).updatedAt));
+    }
+    announce("synced");
+    return { ok: true, pushed: pending.length };
+  } catch (error) {
+    announce("error", String(error?.message || error));
+    return { ok: false, message: String(error?.message || error) };
+  } finally {
+    pushing = false;
+    if (pushAgain) { pushAgain = false; schedulePush(); }
+  }
+}
+
+/* Debounced, because a form submit emits several changes in a row and each
+   one does not deserve its own round trip. */
+export function schedulePush(delay = 2500) {
+  if (!isConnected() || !hasConsent()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => { void pushChanged(); }, delay);
+}
+
+/* Closing the tab should not silently drop what was just typed. */
+export function flushPush() {
+  if (!pushTimer) return;
+  clearTimeout(pushTimer);
+  pushTimer = null;
+  void pushChanged();
+}
+
+export const pendingCount = () => {
+  const since = watermark();
+  try { return store.allRecords().filter((record) => String(record.updatedAt || "") > since).length; }
+  catch { return 0; }
+};
+
+export const lastPushedAt = () => watermark() || null;
 
 export async function pushRecord(record) {
   if (!isConnected() || !hasConsent()) return { ok: true, skipped: true };
