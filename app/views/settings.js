@@ -1,19 +1,19 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-121904";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-121904";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-121904";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-121904";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-121904";
-import * as lock from "../lock.js?v=20260827-121904";
-import * as persist from "../persist.js?v=20260827-121904";
-import * as store from "../store.js?v=20260827-121904";
-import * as records from "../records.js?v=20260827-121904";
-import * as cloud from "../cloud.js?v=20260827-121904";
-import * as notify from "../notify.js?v=20260827-121904";
-import { refreshRates } from "../main-rates.js?v=20260827-121904";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-121904";
-import { whoopRow } from "../whoop.js?v=20260827-121904";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-122205";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-122205";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-122205";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-122205";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-122205";
+import * as lock from "../lock.js?v=20260827-122205";
+import * as persist from "../persist.js?v=20260827-122205";
+import * as store from "../store.js?v=20260827-122205";
+import * as records from "../records.js?v=20260827-122205";
+import * as cloud from "../cloud.js?v=20260827-122205";
+import * as notify from "../notify.js?v=20260827-122205";
+import { refreshRates } from "../main-rates.js?v=20260827-122205";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-122205";
+import { whoopRow } from "../whoop.js?v=20260827-122205";
 
 const ru = () => getLocale() === "ru";
 
@@ -283,19 +283,29 @@ export function settingsView() {
 
         storageRow,
 
-        settingRow("◫", t("set.demoData"),
-          demoCount
-            ? (ru() ? `В базе ${demoCount} записей из примера — их можно убрать, не трогая ваши`
-                    : `${demoCount} sample records — removable without touching yours`)
-            : (ru() ? "Заполнить пример, чтобы посмотреть, как всё работает" : "Load a sample so you can see how it works"),
-          el("div", { class: "row-actions" }, [
-            demoCount
-              ? el("button", { class: "small-button danger", type: "button",
-                               text: ru() ? `Удалить пример (${demoCount})` : `Remove sample (${demoCount})`,
-                               onclick: removeDemo })
-              : el("button", { class: "small-button", type: "button", text: t("set.loadDemo"), onclick: loadDemo }),
-            el("button", { class: "small-button danger", type: "button", text: t("set.clearDemo"), onclick: clearAll })
-          ]))
+        /* The sample is only offered to an empty vault. Loading invented
+           records next to real ones is a way to end up unsure which of your
+           own numbers you can trust, and no explanation on the button undoes
+           that once it has happened. */
+        (demoCount || store.allRecords().length === 0)
+          ? settingRow("◫", t("set.demoData"),
+              demoCount
+                ? (ru() ? `В базе ${demoCount} записей из примера — их можно убрать, не трогая ваши`
+                        : `${demoCount} sample records — removable without touching yours`)
+                : (ru() ? "Заполнить пример, чтобы посмотреть, как всё работает" : "Load a sample so you can see how it works"),
+              el("div", { class: "row-actions" }, [
+                demoCount
+                  ? el("button", { class: "small-button danger", type: "button",
+                                   text: ru() ? `Удалить пример (${demoCount})` : `Remove sample (${demoCount})`,
+                                   onclick: removeDemo })
+                  : el("button", { class: "small-button", type: "button", text: t("set.loadDemo"), onclick: loadDemo })
+              ]))
+          : null,
+
+        settingRow("⌦", ru() ? "Очистить всё" : "Erase everything",
+          ru() ? "Удаляет все записи и файлы с этого устройства. Отменить нельзя."
+               : "Removes every record and file from this device. Cannot be undone.",
+          el("button", { class: "small-button danger", type: "button", text: t("set.clearDemo"), onclick: clearAll }))
       ].filter(Boolean)));
   }
 
@@ -671,7 +681,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-121904");
+                       const suite = await import("../selftest.js?v=20260827-122205");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length
