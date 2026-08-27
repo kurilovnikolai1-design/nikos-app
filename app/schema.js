@@ -242,6 +242,21 @@ export const TYPES = {
   },
 
   /* ---------- Thinking ---------- */
+  /* A goal is money with a deadline. It carries no balance of its own: the
+     amount is what has been put aside so far, and targetMinor is where it is
+     going. Deliberately BALANCE_ROLE.NONE — counting a savings goal as an
+     asset on top of the account holding the money would double it. */
+  goal: {
+    view: "capital", icon: "◎", role: BALANCE_ROLE.NONE,
+    title: { ru: "Цель", en: "Goal" },
+    plural: { ru: "Цели", en: "Goals" },
+    fields: ["name", "category", "amount", "targetAmount", "currency", "date", "targetDate",
+             "status", "priority", "owner", "linked", "details"],
+    statuses: ["active", "waiting", "done", "archived"], defaultStatus: "active",
+    categories: [c("savings", "Накопить", "Save up"), c("payoff", "Закрыть долг", "Pay off a debt"),
+                 c("purchase", "Крупная покупка", "Big purchase"), c("reserve", "Подушка", "Safety net"),
+                 c("other", "Другое", "Other")]
+  },
   decision: {
     view: "decisions", icon: "◆", role: BALANCE_ROLE.NONE,
     title: { ru: "Решение", en: "Decision" },

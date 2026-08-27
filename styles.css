@@ -982,6 +982,30 @@ button.metric-card:hover { border-color: var(--border-strong); }
 
 @media (prefers-reduced-motion: reduce) { .budget-fill { transition: none; } }
 
+/* Goals: a row is a whole thought — what it is, how far along, what it takes. */
+.goal-list { display: grid; gap: 10px; }
+.goal-row {
+  display: grid; gap: 8px; width: 100%; text-align: left;
+  padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--text); cursor: pointer;
+}
+.goal-row:hover { border-color: var(--accent); }
+.goal-row.reached { opacity: .72; }
+.goal-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 4px 12px;
+}
+.goal-head strong { font-size: var(--step-md); }
+.goal-figures { font-size: var(--step-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+.goal-track {
+  height: 8px; border-radius: 999px; background: var(--surface);
+  border: 1px solid var(--line); overflow: hidden;
+}
+.goal-track i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.goal-row.reached .goal-track i { background: var(--good, var(--accent)); }
+.goal-row.behind .goal-track i { background: var(--warn); }
+.goal-note { color: var(--faint); font-size: var(--step-xs); line-height: 1.5; }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

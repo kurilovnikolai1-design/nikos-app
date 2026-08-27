@@ -1,17 +1,18 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-133115";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-133445";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-133115";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-133115";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-133115";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-133115";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-133115";
-import { isVerified } from "../schema.js?v=20260827-133115";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-133115";
-import { openRecordForm } from "../form.js?v=20260827-133115";
-import * as store from "../store.js?v=20260827-133115";
-import * as records from "../records.js?v=20260827-133115";
+         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-133445";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-133445";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-133445";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-133445";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-133445";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-133445";
+import { isVerified } from "../schema.js?v=20260827-133445";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-133445";
+import { openRecordForm } from "../form.js?v=20260827-133445";
+import * as store from "../store.js?v=20260827-133445";
+import * as records from "../records.js?v=20260827-133445";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -49,6 +50,84 @@ function confirmPendingButton(pending, label = null) {
 }
 
 /* ---------- Capital ---------- */
+
+/* Where money is going, as opposed to where it is. */
+function goalsPanel(all) {
+  const overview = goalsOverview(all, base(), store.getRates());
+  const add = addButton("goal", t("app.add"), refresh, "small-button");
+
+  if (!overview.length) {
+    return panel("records-panel goals-panel",
+      panelHeader(ru() ? "ЦЕЛИ" : "GOALS", ru() ? "Куда идут деньги" : "Where money is going", add),
+      emptyState(ru()
+        ? "Накопить на что-то, закрыть долг к сроку, собрать подушку. Nik'Os посчитает, сколько осталось и сколько нужно откладывать в месяц."
+        : "Save up for something, clear a debt by a date, build a safety net. Nik'Os works out what is left and what it takes per month.",
+        `${t("app.add")}: ${typeLabel("goal").toLowerCase()}`,
+        () => openRecordForm("goal", null, { onSaved: refresh })));
+  }
+
+  const outstanding = totalOutstanding(overview);
+
+  return panel("records-panel goals-panel",
+    panelHeader(ru() ? "ЦЕЛИ" : "GOALS",
+      outstanding
+        ? (ru() ? `Не хватает ${money(outstanding)}` : `${money(outstanding)} still needed`)
+        : (ru() ? "Все цели закрыты" : "All goals reached"),
+      add),
+
+    el("div", { class: "goal-list" }, overview.map((item) => {
+      const reached = item.state === GOAL_STATE.REACHED;
+      const behind = item.state === GOAL_STATE.BEHIND;
+
+      return el("button", {
+        class: `goal-row${reached ? " reached" : ""}${behind ? " behind" : ""}`,
+        type: "button",
+        onclick: () => openRecordForm("goal", item.record, { onSaved: refresh })
+      }, [
+        el("div", { class: "goal-head" }, [
+          el("strong", { text: item.record.name }),
+          el("span", { class: "goal-figures", text: item.state === GOAL_STATE.NO_TARGET
+            ? (ru() ? "не указана сумма цели" : "no target amount")
+            : `${money(item.savedMinor)} ${ru() ? "из" : "of"} ${money(item.targetMinor)}` })
+        ]),
+
+        item.state === GOAL_STATE.NO_TARGET ? null : el("div", { class: "goal-track" }, [
+          el("i", { style: `width:${Math.max(2, Math.round(item.share * 100))}%` })
+        ]),
+
+        el("small", { class: "goal-note", text: goalLine(item) })
+      ]);
+    })),
+
+    el("p", { class: "panel-note", text: ru() ? GOAL_NOTE.ru : GOAL_NOTE.en }));
+
+  function goalLine(item) {
+    if (item.state === GOAL_STATE.NO_TARGET) {
+      return ru() ? "Впишите, сколько нужно собрать — тогда появится прогресс."
+                  : "Add the amount needed and the progress will appear.";
+    }
+    if (item.state === GOAL_STATE.REACHED) {
+      return ru() ? "Собрано полностью." : "Fully funded.";
+    }
+    if (item.state === GOAL_STATE.NO_DEADLINE) {
+      return ru() ? `Не хватает ${money(item.remainingMinor)}. Срок не указан.`
+                  : `${money(item.remainingMinor)} short. No date set.`;
+    }
+    if (item.overdue) {
+      return ru() ? `Срок прошёл, не хватает ${money(item.remainingMinor)}.`
+                  : `Past the date, ${money(item.remainingMinor)} short.`;
+    }
+    const perMonth = money(item.neededPerMonthMinor);
+    const months = Math.max(1, Math.round(item.monthsLeft));
+    const pace = item.achievedPerMonthMinor !== null
+      ? (ru() ? ` Пока выходит ${money(item.achievedPerMonthMinor)} в месяц.`
+              : ` So far it is ${money(item.achievedPerMonthMinor)} a month.`)
+      : "";
+    return (ru()
+      ? `Чтобы успеть за ${countOf(months, PLURALS.month)}, нужно ${perMonth} в месяц.`
+      : `To make it in ${months} months takes ${perMonth} a month.`) + pace;
+  }
+}
 
 export function capitalView() {
   const all = store.liveRecords();
@@ -88,6 +167,8 @@ export function capitalView() {
       el("span", { text: ru() ? " — эти суммы не вошли в чистый капитал." : " — those amounts are not in net worth." })
     ]));
   }
+
+  page.append(goalsPanel(all));
 
   page.append(panel("records-panel",
     panelHeader(ru() ? "СЧЕТА" : "ACCOUNTS", ru() ? "Ваши счета" : "Your accounts",

@@ -2,22 +2,24 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-133115";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-133115";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-133115";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-133115";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-133115";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-133115";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-133115";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-133115";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-133115";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-133115";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-133115";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-133115";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-133115";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-133115";
-import { parseReport } from "./procedures.js?v=20260827-133115";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-133115";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-133445";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-133445";
+const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-133445";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-133445";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-133445";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-133445";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-133445";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-133445";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-133445";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-133445";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-133445";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-133445";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-133445";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-133445";
+import { parseReport } from "./procedures.js?v=20260827-133445";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-133445";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-133445";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -275,11 +277,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-133115")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-133445")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-133115")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-133445")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -288,14 +290,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-133115")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-133445")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-133115")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-133445")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -384,6 +386,46 @@ check("у самого предела — отдельное состояние"
 
 check("пустая история не даёт среднего", typicalMonthlySpend([], "RUB", RATES) === null,
       "месяц без записей — это несобранные данные, а не нулевые траты");
+
+/* ---------- Goals ---------- */
+
+/* The invariant that protects net worth: a goal holds money that is already
+   counted where it sits, so it must contribute nothing to the balance. */
+check("цель не участвует в капитале", TYPES_ROLE_NONE("goal"));
+
+const goal = (over) => ({ type: "goal", status: "active", currency: "RUB",
+                          deletedAt: null, linkedIds: [], ...over });
+
+const reached = goalProgress(goal({ id: "g1", amountMinor: 5_000_00, targetAmountMinor: 5_000_00 }), "RUB", RATES);
+check("цель собрана", reached.state === GOAL_STATE.REACHED);
+check("собранная цель не требует добора", reached.remainingMinor === 0);
+
+const noTarget = goalProgress(goal({ id: "g2", amountMinor: 1_000_00 }), "RUB", RATES);
+check("без суммы цели прогресс не выдумывается", noTarget.state === GOAL_STATE.NO_TARGET);
+
+const noDate = goalProgress(goal({ id: "g3", amountMinor: 1_000_00, targetAmountMinor: 5_000_00 }), "RUB", RATES);
+check("без срока — без темпа", noDate.state === GOAL_STATE.NO_DEADLINE);
+check("но нехватка посчитана", noDate.remainingMinor === 4_000_00);
+
+/* Twelve months, half of it saved: the arithmetic must be the shortfall over
+   the months remaining, not over the whole period. */
+const future = new Date(Date.now() + 365 * 86_400_000).toISOString().slice(0, 10);
+const paced = goalProgress(goal({ id: "g4", amountMinor: 50_000_00, targetAmountMinor: 110_000_00, targetDate: future }), "RUB", RATES);
+check("нужно в месяц посчитано от остатка",
+      Math.abs(paced.neededPerMonthMinor - 5_000_00) < 20_00,
+      String(paced.neededPerMonthMinor));
+
+const overdue = goalProgress(goal({ id: "g5", amountMinor: 1_000_00, targetAmountMinor: 9_000_00, targetDate: "2020-01-01" }), "RUB", RATES);
+check("просроченная цель названа просроченной", overdue.overdue === true && overdue.state === GOAL_STATE.BEHIND);
+
+const overview = goalsOverview([
+  goal({ id: "g6", name: "A", amountMinor: 0, targetAmountMinor: 10_000_00, targetDate: future }),
+  goal({ id: "g7", name: "B", amountMinor: 10_000_00, targetAmountMinor: 10_000_00 }),
+  goal({ id: "g8", name: "C", amountMinor: 0, targetAmountMinor: 1_000_00, status: "archived" })
+], "RUB", RATES);
+check("архивные цели не показываются", !overview.some((item) => item.record.id === "g8"));
+check("собранные уходят вниз", overview.at(-1)?.record.id === "g7");
+check("общая нехватка суммируется", totalOutstanding(overview) === 10_000_00, String(totalOutstanding(overview)));
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

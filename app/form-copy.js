@@ -29,6 +29,7 @@ export const FIELD_COPY = {
 
   /* ---------------- which date is being asked for ---------------- */
   date: {
+    goal:       c("Начали копить", "Started saving"),
     account:     c("Остаток на дату", "Balance as of"),
     receivable:  c("Когда одолжили", "Lent on"),
     payable:     c("Когда возник долг", "Incurred on"),
@@ -50,6 +51,7 @@ export const FIELD_COPY = {
 
   /* ---------------- the money line ---------------- */
   amount: {
+    goal:       c("Уже отложено", "Put aside so far", "Сколько уже есть на эту цель", "What is set aside for this"),
     account:    c("Остаток", "Balance", "Сколько сейчас на счёте", "What is on the account now"),
     receivable: c("Сколько должны вам", "Amount owed to you"),
     payable:    c("Сколько вы должны", "Amount you owe", "Остаток долга, а не изначальная сумма", "What is left, not the original sum"),
@@ -58,6 +60,14 @@ export const FIELD_COPY = {
     investment: c("Сколько стоит сейчас", "Current value", "Текущая оценка, а не вложенное", "Today's value, not what you put in"),
     asset:      c("Сколько стоит сейчас", "Current value", "Ваша оценка — точность можно уточнить позже", "Your estimate — it can be refined later"),
     crypto:     c("Оценка вручную", "Manual valuation", "Нужна только если монета не котируется автоматически", "Only needed when the coin is not priced automatically")
+  },
+
+  targetAmount: {
+    goal: c("Сколько нужно", "How much is needed", "Например: 1 500 000", "e.g. 1 500 000")
+  },
+
+  targetDate: {
+    goal: c("К какому сроку", "By when", "Можно оставить пустым", "Can be left empty")
   },
 
   costBasis: {

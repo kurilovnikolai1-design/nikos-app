@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-133115";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-133445";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -199,6 +199,8 @@ const DICT = {
   "form.linked": { ru: "Связать с записью", en: "Link to a record" },
   "form.noLink": { ru: "Без связи", en: "No link" },
   "form.file": { ru: "Файл", en: "File" },
+  "form.targetAmount": { ru: "Цель, сумма", en: "Target amount" },
+  "form.targetDate": { ru: "Срок", en: "Target date" },
   "form.fileOpen": { ru: "Открыть", en: "Open" },
   "form.fileShrunk": { ru: "уменьшено с {from}", en: "reduced from {from}" },
   "form.fileRemove": { ru: "Убрать", en: "Remove" },
@@ -381,7 +383,9 @@ export const PLURALS = {
   proposal: { ru: { one: "предложение", few: "предложения", many: "предложений", other: "предложения" },
               en: { one: "proposal", other: "proposals" } },
   analyte:  { ru: { one: "показатель", few: "показателя", many: "показателей", other: "показателя" },
-              en: { one: "analyte", other: "analytes" } }
+              en: { one: "analyte", other: "analytes" } },
+  month:    { ru: { one: "месяц", few: "месяца", many: "месяцев", other: "месяца" },
+              en: { one: "month", other: "months" } }
 };
 
 /* "3 пункта требуют внимания" — verb agreement matters too. */
