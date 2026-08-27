@@ -1,8 +1,8 @@
 /* Keeping the rate snapshot fresh, without ever blocking the interface. */
 
-import * as store from "./store.js?v=20260827-150156";
-import * as rates from "./rates.js?v=20260827-150156";
-import { fetchQuotes } from "./quotes.js?v=20260827-150156";
+import * as store from "./store.js?v=20260827-150530";
+import * as rates from "./rates.js?v=20260827-150530";
+import { fetchQuotes } from "./quotes.js?v=20260827-150530";
 
 let inFlight = null;
 

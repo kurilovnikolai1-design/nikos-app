@@ -14,7 +14,7 @@
  * not be valued is counted and reported rather than quietly skipped, because
  * "проект в плюсе" is a different statement when two expenses were dropped. */
 
-import { valueInBase, EXCLUSION } from "./finance.js?v=20260827-150156";
+import { valueInBase, EXCLUSION } from "./finance.js?v=20260827-150530";
 
 const COUNTS = new Set(["confirmed", "active", "done", "closed"]);
 

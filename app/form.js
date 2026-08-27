@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-150156";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-150156";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-150156";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-150156";
-import { COINS } from "./rates.js?v=20260827-150156";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-150156";
-import * as store from "./store.js?v=20260827-150156";
-import * as records from "./records.js?v=20260827-150156";
-import * as attachments from "./attachments.js?v=20260827-150156";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-150530";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-150530";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-150530";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-150530";
+import { COINS } from "./rates.js?v=20260827-150530";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-150530";
+import * as store from "./store.js?v=20260827-150530";
+import * as records from "./records.js?v=20260827-150530";
+import * as attachments from "./attachments.js?v=20260827-150530";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -571,30 +571,37 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
   }
 
   function fileField() {
-    const attachment = draft.attachment;
+    const files = attachments.attachmentsOf(draft);
 
-    /* The bytes are written the moment a file is chosen, not on submit: a form
-       abandoned halfway used to leave a name pointing at nothing, and writing
-       early makes "attached" mean the file is genuinely stored. An abandoned
+    /* Bytes are written the moment a file is chosen, not on submit: a form
+       abandoned halfway used to leave a name pointing at nothing. An abandoned
        upload becomes an orphan, which attachments.sweep clears later. */
     const input = el("input", {
-      class: "form-control", type: "file",
+      class: "form-control", type: "file", multiple: "multiple",
       accept: ".pdf,.png,.jpg,.jpeg,.webp,.heic,.doc,.docx,.xls,.xlsx,.csv,.txt",
       onchange: async (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
+        const chosen = [...(event.target.files || [])];
+        if (!chosen.length) return;
 
-        const saved = await attachments.saveFile(file);
-        if (saved.result !== attachments.RESULT.OK) {
-          toast(saved.result === attachments.RESULT.TOO_LARGE
-            ? t("form.fileTooLarge").replace("{limit}", attachments.describeSize(attachments.MAX_BYTES, getLocale()))
-            : t("form.fileFailed"), { tone: "danger" });
-          event.target.value = "";
-          return;
+        const added = [];
+        for (const file of chosen) {
+          const saved = await attachments.saveFile(file);
+          if (saved.result !== attachments.RESULT.OK) {
+            toast(saved.result === attachments.RESULT.TOO_LARGE
+              ? t("form.fileTooLarge").replace("{limit}", attachments.describeSize(attachments.MAX_BYTES, getLocale()))
+              : t("form.fileFailed"), { tone: "danger" });
+            continue;
+          }
+          added.push(saved.attachment);
         }
 
-        if (attachment?.id) await attachments.deleteFile(attachment);
-        set("attachment", saved.attachment);
+        if (added.length) {
+          set("attachments", [...files, ...added]);
+          /* The old single field is cleared once the list takes over, so the
+             two shapes never both hold a copy of the same descriptor. */
+          set("attachment", null);
+        }
+        event.target.value = "";
         render();
       }
     });
@@ -604,16 +611,16 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
       input
     ];
 
-    if (attachment) {
+    for (const file of files) {
       rows.push(el("div", { class: "attachment-row" }, [
-        el("span", { class: "attachment-name", text: attachment.name }),
-        el("small", { text: attachment.originalSize
-          ? `${attachments.describeSize(attachment.size, getLocale())} · ${t("form.fileShrunk").replace("{from}", attachments.describeSize(attachment.originalSize, getLocale()))}`
-          : attachments.describeSize(attachment.size, getLocale()) }),
+        el("span", { class: "attachment-name", text: file.name }),
+        el("small", { text: file.originalSize
+          ? `${attachments.describeSize(file.size, getLocale())} · ${t("form.fileShrunk").replace("{from}", attachments.describeSize(file.originalSize, getLocale()))}`
+          : attachments.describeSize(file.size, getLocale()) }),
         el("button", {
           class: "text-button", type: "button", text: t("form.fileOpen"),
           onclick: async () => {
-            const blob = await attachments.loadFile(attachment);
+            const blob = await attachments.loadFile(file);
             if (!blob) { toast(t("form.fileMissing"), { tone: "danger" }); return; }
             const url = URL.createObjectURL(blob);
             window.open(url, "_blank", "noopener");
@@ -623,13 +630,19 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         }),
         el("button", {
           class: "text-button danger", type: "button", text: t("form.fileRemove"),
-          onclick: async () => { await attachments.deleteFile(attachment); set("attachment", null); render(); }
+          onclick: async () => {
+            await attachments.deleteFile(file);
+            set("attachments", files.filter((item) => item.id !== file.id));
+            set("attachment", null);
+            render();
+          }
         })
       ]));
     }
 
     return el("label", { class: "form-field wide" }, rows);
   }
+
 
 
   async function submit() {

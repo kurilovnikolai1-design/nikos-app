@@ -1,18 +1,18 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-150156";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-150530";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-150156";
-import { formatMoney } from "../money.js?v=20260827-150156";
-import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-150156";
-import { buildAttention } from "../attention.js?v=20260827-150156";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-150156";
-import { openRecordForm } from "../form.js?v=20260827-150156";
-import { navigate } from "../router.js?v=20260827-150156";
-import * as store from "../store.js?v=20260827-150156";
-import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-150156";
-import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-150156";
-import * as records from "../records.js?v=20260827-150156";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-150530";
+import { formatMoney } from "../money.js?v=20260827-150530";
+import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-150530";
+import { buildAttention } from "../attention.js?v=20260827-150530";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-150530";
+import { openRecordForm } from "../form.js?v=20260827-150530";
+import { navigate } from "../router.js?v=20260827-150530";
+import * as store from "../store.js?v=20260827-150530";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-150530";
+import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-150530";
+import * as records from "../records.js?v=20260827-150530";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";

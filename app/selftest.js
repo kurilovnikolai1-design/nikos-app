@@ -2,30 +2,31 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-150156";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-150156";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-150156";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-150156";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-150156";
-import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-150156";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-150156";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-150156";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-150156";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-150156";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-150156";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-150156";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-150156";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-150156";
-import { parseReport } from "./procedures.js?v=20260827-150156";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-150156";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-150156";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-150156";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-150156";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-150156";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-150156";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-150156";
-import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260827-150156";
-import { parseStatement } from "./bank-import.js?v=20260827-150156";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-150530";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-150530";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-150530";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-150530";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-150530";
+import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-150530";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-150530";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-150530";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-150530";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-150530";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-150530";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-150530";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-150530";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-150530";
+import { parseReport } from "./procedures.js?v=20260827-150530";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260827-150530";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-150530";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-150530";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-150530";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-150530";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-150530";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-150530";
+import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260827-150530";
+import { parseStatement } from "./bank-import.js?v=20260827-150530";
+import { attachmentsOf } from "./attachments.js?v=20260827-150530";
 
 /* A goal must never add to net worth; the money is already counted where it sits. */
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
@@ -286,11 +287,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-150156")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-150530")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-150156")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-150530")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -299,14 +300,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-150156")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-150530")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-150156")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-150530")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -418,6 +419,39 @@ check("разовая покупка не входит в средний рас�
 const monthFlow = cashflow(withCar, "RUB", RATES, periodRange("month", -1));
 check("но в самом месяце она посчитана", monthFlow.expenseMinor === 2_060_000_00,
       String(monthFlow.expenseMinor));
+
+/* ---------- Money already spoken for ---------- */
+
+const mid = new Date(new Date().getFullYear(), new Date().getMonth(), 12, 12);
+const onDay = (day) => new Date(mid.getFullYear(), mid.getMonth(), day).toISOString().slice(0, 10);
+const obligations = [
+  { id: "cm1", type: "expense", status: "confirmed", recurring: true, frequency: "monthly",
+    name: "Ипотека", amountMinor: 60_000_00, currency: "RUB", date: onDay(17) },
+  { id: "cm2", type: "expense", status: "confirmed", recurring: true, frequency: "monthly",
+    name: "Коммуналка", amountMinor: 12_000_00, currency: "RUB", date: onDay(5) },
+  { id: "cm3", type: "expense", status: "confirmed", recurring: true, frequency: "annual",
+    name: "Страховка", amountMinor: 24_000_00, currency: "RUB", date: onDay(20) }
+];
+const ahead = committedAhead(obligations, "RUB", RATES, { now: mid });
+check("платёж впереди учтён", ahead.totalMinor === 60_000_00, String(ahead.totalMinor));
+check("уже прошедший платёж не считается дважды",
+      !ahead.items.some((item) => item.record.id === "cm2"));
+check("годовой платёж не приписывается этому месяцу",
+      !ahead.items.some((item) => item.record.id === "cm3"),
+      "иначе страховка списывалась бы двенадцать раз в год");
+
+const budgeted = budgetStatus(obligations, "RUB", RATES, { budgetMinor: 100_000_00 }, { now: mid });
+check("свободно = остаток минус занятое",
+      budgeted.freeMinor === budgeted.remainingMinor - budgeted.committedMinor);
+
+/* ---------- Attachments, both shapes ---------- */
+
+const oneFile = { attachment: { id: "f1", name: "a.pdf" } };
+const manyFiles = { attachments: [{ id: "f1", name: "a.pdf" }, { id: "f2", name: "b.pdf" }] };
+check("старая форма с одним файлом читается", attachmentsOf(oneFile).length === 1,
+      "иначе вложения существующих записей исчезнут");
+check("новая форма со списком читается", attachmentsOf(manyFiles).length === 2);
+check("запись без файлов не ломается", attachmentsOf({}).length === 0);
 
 /* ---------- Goals ---------- */
 

@@ -15,8 +15,8 @@
  * vault is not — or the reverse — would be a promise broken in one direction
  * or a nuisance in the other. */
 
-import * as idb from "./idb.js?v=20260827-150156";
-import * as lock from "./lock.js?v=20260827-150156";
+import * as idb from "./idb.js?v=20260827-150530";
+import * as lock from "./lock.js?v=20260827-150530";
 
 const PREFIX = "file:";
 
@@ -167,6 +167,16 @@ export async function deleteFile(attachment) {
   try { await idb.remove(PREFIX + attachment.id); } catch { /* already gone */ }
 }
 
+/* A record's files, however they were stored.
+ *
+ * The first version allowed exactly one file per record, and a discharge
+ * summary is rarely one page. Rather than migrate every record, both shapes
+ * are read: the old single `attachment` and the new `attachments` array. */
+export const attachmentsOf = (record) => {
+  if (Array.isArray(record?.attachments)) return record.attachments.filter(Boolean);
+  return record?.attachment ? [record.attachment] : [];
+};
+
 /* Files with no record pointing at them any more — deleting a record leaves
    its bytes behind, and on a phone that adds up quietly. */
 export async function orphans(records) {
@@ -174,7 +184,7 @@ export async function orphans(records) {
   try {
     const referenced = new Set();
     for (const record of records) {
-      if (record.attachment?.id) referenced.add(record.attachment.id);
+      for (const file of attachmentsOf(record)) referenced.add(file.id);
     }
     const all = await idb.keys();
     return all

@@ -1,22 +1,22 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-150156";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-150530";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-150156";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-150156";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-150156";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-150156";
-import { refreshRates } from "../main-rates.js?v=20260827-150156";
-import { openBankImport } from "../csv.js?v=20260827-150156";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-150156";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-150156";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-150156";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-150156";
-import { isVerified } from "../schema.js?v=20260827-150156";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-150156";
-import { openRecordForm } from "../form.js?v=20260827-150156";
-import * as store from "../store.js?v=20260827-150156";
-import * as records from "../records.js?v=20260827-150156";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-150530";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-150530";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-150530";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-150530";
+import { refreshRates } from "../main-rates.js?v=20260827-150530";
+import { openBankImport } from "../csv.js?v=20260827-150530";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-150530";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-150530";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-150530";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-150530";
+import { isVerified } from "../schema.js?v=20260827-150530";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-150530";
+import { openRecordForm } from "../form.js?v=20260827-150530";
+import * as store from "../store.js?v=20260827-150530";
+import * as records from "../records.js?v=20260827-150530";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -367,6 +367,22 @@ function budgetPanel() {
         : (ru() ? `Перерасход. До конца месяца ${countOf(status.daysLeft, PLURALS.day)}.`
                 : `Over budget, with ${status.daysLeft} days to go.`) })
     ]),
+
+    /* Money already spoken for is not money available. Without this line the
+       remaining figure quietly includes the mortgage that goes out on the
+       17th, and a purchase made on the 12th looks affordable when it is not. */
+    status.committedMinor > 0
+      ? el("div", { class: "budget-committed" }, [
+          el("span", { text: ru()
+            ? `Из них ${money(status.committedMinor)} уже занято платежами впереди`
+            : `${money(status.committedMinor)} of that is already committed` }),
+          el("small", { text: status.committedItems
+            .map((item) => `${item.day}-е · ${item.record.name || "платёж"} · ${money(item.minor)}`)
+            .join(" · ") }),
+          el("b", { class: status.freeMinor >= 0 ? "positive" : "negative",
+                    text: ru() ? `Свободно: ${money(status.freeMinor)}` : `Free: ${money(status.freeMinor)}` })
+        ])
+      : null,
 
     el("div", { class: "budget-track", role: "presentation" }, [
       el("i", { class: "budget-fill", style: `width:${Math.min(100, Math.round(status.share * 100))}%` }),

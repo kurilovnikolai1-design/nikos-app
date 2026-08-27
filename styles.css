@@ -1175,6 +1175,18 @@ button.metric-card:hover { border-color: var(--border-strong); }
 /* Why a search result appeared, when it was not the name that matched. */
 .search-where { color: var(--accent); font-size: var(--step-xs); }
 
+/* Money already spoken for, and what is genuinely free after it. */
+.budget-committed {
+  display: grid; gap: 4px; margin-top: 12px; padding: 11px 13px;
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.budget-committed span { font-size: var(--step-sm); }
+.budget-committed small { color: var(--faint); font-size: var(--step-xs); overflow-wrap: anywhere; }
+.budget-committed b { font-size: var(--step-md); font-variant-numeric: tabular-nums; }
+.budget-committed b.positive { color: var(--good, #3e8e6e); }
+.budget-committed b.negative { color: var(--danger, #d9534f); }
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }

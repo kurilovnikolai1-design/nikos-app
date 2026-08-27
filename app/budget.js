@@ -19,7 +19,7 @@
  *   excluded and why; that count is carried through, because "осталось 40 000"
  *   is a different statement when three expenses were not counted. */
 
-import { cashflow, periodRange, monthKey } from "./finance.js?v=20260827-150156";
+import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260827-150530";
 
 export const BUDGET_STATE = {
   UNSET: "unset",
@@ -61,6 +61,39 @@ export function typicalMonthlySpend(records, base, rates, { months = 3 } = {}) {
   return { averageMinor: average, months: totals.length };
 }
 
+/* Obligations still ahead this month.
+ *
+ * "Осталось 40 000" is a very different sentence when the mortgage goes out
+ * on the 17th and today is the 12th. This counts recurring expenses whose day
+ * of the month has not arrived yet, so the free figure is money genuinely
+ * free rather than money already spoken for.
+ *
+ * Only monthly obligations with a day that can be read from their date: an
+ * annual insurance renewal is not a claim on this month, and guessing which
+ * month it falls in would invent a payment. */
+export function committedAhead(records, base, rates, { now = new Date() } = {}) {
+  const today = now.getDate();
+  const items = [];
+
+  for (const record of records) {
+    if (record.deletedAt || record.type !== "expense" || !record.recurring) continue;
+    if (record.status === "archived") continue;
+    if (record.frequency && record.frequency !== "monthly") continue;
+
+    const source = record.nextDueDate || record.date;
+    if (!source) continue;
+    const day = Number(String(source).slice(8, 10));
+    if (!Number.isFinite(day) || day <= today) continue;
+
+    const minor = monthlyEquivalentMinor(record, base, rates);
+    if (minor === null) continue;
+    items.push({ record, day, minor });
+  }
+
+  items.sort((a, b) => a.day - b.day);
+  return { items, totalMinor: items.reduce((sum, item) => sum + item.minor, 0) };
+}
+
 /* The state of this month against the limit. */
 export function budgetStatus(records, base, rates, settings, { now = new Date() } = {}) {
   const limitMinor = Number(settings?.budgetMinor) || 0;
@@ -95,11 +128,19 @@ export function budgetStatus(records, base, rates, settings, { now = new Date() 
     ? BUDGET_STATE.OVER
     : (share >= 0.9 ? BUDGET_STATE.CLOSE : BUDGET_STATE.UNDER);
 
+  const committed = committedAhead(records, base, rates, { now });
+  const freeMinor = remainingMinor - committed.totalMinor;
+
   return {
     state,
     limitMinor,
     spentMinor,
     remainingMinor,
+    /* What is left once the payments already scheduled this month are set
+       aside. This is the number that answers "могу ли я это купить". */
+    committedMinor: committed.totalMinor,
+    committedItems: committed.items,
+    freeMinor,
     share,
     expectedShare,
     ahead,
