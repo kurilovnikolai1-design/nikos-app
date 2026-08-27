@@ -1,20 +1,21 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-142201";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-144201";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-142201";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-142201";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-142201";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-142201";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-142201";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-142201";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-142201";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-142201";
-import { isVerified } from "../schema.js?v=20260827-142201";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-142201";
-import { openRecordForm } from "../form.js?v=20260827-142201";
-import * as store from "../store.js?v=20260827-142201";
-import * as records from "../records.js?v=20260827-142201";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-144201";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-144201";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-144201";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-144201";
+import { refreshRates } from "../main-rates.js?v=20260827-144201";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-144201";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-144201";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-144201";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-144201";
+import { isVerified } from "../schema.js?v=20260827-144201";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-144201";
+import { openRecordForm } from "../form.js?v=20260827-144201";
+import * as store from "../store.js?v=20260827-144201";
+import * as records from "../records.js?v=20260827-144201";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -731,25 +732,78 @@ export function cryptoView() {
     addButton("crypto", typeLabel("crypto"), refresh),
     ru() ? "ТОЛЬКО ЧТЕНИЕ · НИКОГДА НЕ ХРАНЕНИЕ" : "OBSERVED ONLY · NEVER CUSTODY"));
 
+  /* Every holding entered, priced or not. Skipping the unconfirmed ones used
+     to print a confident zero next to a screen full of coins, which is how
+     "я вписал 50 BTC и ничего не появилось" happens. */
   let totalUsdMinor = 0;
   let priced = 0;
+  let unpricedCoins = [];
+  const pending = holdings.filter((record) => !isVerified(record) && record.status !== "archived");
+
   for (const record of holdings) {
-    if (!isVerified(record)) continue;
+    if (record.status === "archived") continue;
     const price = cryptoUsdPrice(rates, record.coin);
     if (price && Number.isFinite(Number(record.quantity))) {
       totalUsdMinor += Math.round(Number(record.quantity) * price * 100);
       priced += 1;
+    } else if (record.coin) {
+      unpricedCoins.push(record.coin);
     }
   }
 
+  /* Nothing priced is not the same as nothing owned. A confident "0 $" above a
+     screen listing coins says the holdings are worthless; a dash says the app
+     does not know yet, which is the truth. */
+  const nothingPriced = holdings.length > 0 && priced === 0;
+
   page.append(el("div", { class: "metric-grid" }, [
-    metricCard({ kicker: ru() ? "ОЦЕНКА, USD" : "VALUE, USD", value: formatMoney(totalUsdMinor, "USD", getLocale()),
-                 note: `${priced} ${ru() ? "позиций с ценой" : "priced positions"}` }),
+    metricCard({ kicker: ru() ? "ОЦЕНКА, USD" : "VALUE, USD",
+                 value: nothingPriced ? "—" : formatMoney(totalUsdMinor, "USD", getLocale()),
+                 note: nothingPriced
+                   ? (ru() ? "цены не загружены" : "prices not loaded")
+                   : `${priced} ${ru() ? plural(priced, PLURALS.position) : "priced"} ${ru() ? "с ценой" : "positions"}` }),
     metricCard({ kicker: ru() ? "ПОЗИЦИЙ" : "HOLDINGS", value: String(holdings.length) }),
     metricCard({ kicker: ru() ? "ЦЕНЫ ОТ" : "PRICES FROM",
                  value: rates?.cryptoFetchedAt ? "CoinGecko" : "—",
                  note: rates?.cryptoFetchedAt ? formatDate(rates.cryptoFetchedAt, "short") : (ru() ? "не загружены" : "not loaded") })
   ]));
+
+  if (nothingPriced) {
+    page.append(el("div", { class: "inline-warning" }, [
+      el("strong", { text: ru() ? "Цены не загружены" : "Prices are not loaded" }),
+      el("span", { text: ru()
+        ? " — поэтому оценка не показана. Ваши монеты на месте."
+        : " — so no valuation is shown. Your holdings are intact." }),
+      el("button", { class: "small-button", type: "button", text: t("money.refreshRates"),
+        onclick: async () => {
+          const done = await refreshRates({ force: true });
+          toast(done.ok ? t("money.ratesUpdated") : t("money.ratesFailed"), { tone: done.ok ? "success" : "danger" });
+          refresh();
+        } })
+    ]));
+  }
+
+  /* The value above is real; the capital screen still leaves these out until
+     they are confirmed. Saying so — with the fix attached — is the difference
+     between a number that disagrees with another number for no visible reason
+     and one that explains itself. */
+  if (pending.length) {
+    page.append(el("div", { class: "inline-warning" }, [
+      el("strong", { text: ru()
+        ? `Не подтверждено: ${pending.length}`
+        : `${pending.length} not confirmed` }),
+      el("span", { text: ru()
+        ? " — эти позиции показаны здесь, но не входят в чистый капитал."
+        : " — shown here, but not counted in net worth." }),
+      confirmPendingButton(pending, ru() ? "Подтвердить и посчитать" : "Confirm and count")
+    ]));
+  }
+
+  if (unpricedCoins.length) {
+    page.append(el("p", { class: "panel-note warn", text: ru()
+      ? `Нет автоматической цены для: ${[...new Set(unpricedCoins)].join(", ")}. Укажите оценку вручную в записи.`
+      : `No automatic price for: ${[...new Set(unpricedCoins)].join(", ")}. Enter a valuation in the record.` }));
+  }
 
   page.append(el("div", { class: "safety-banner" }, [
     el("strong", { text: ru() ? "Nik'Os не принимает seed-фразы и приватные ключи." : "Nik'Os does not accept seed phrases or private keys." }),

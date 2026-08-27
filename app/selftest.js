@@ -2,29 +2,29 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-142201";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-142201";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-144201";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-144201";
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-142201";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-142201";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-142201";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-142201";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-142201";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-142201";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-142201";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-142201";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-142201";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-142201";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-142201";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-142201";
-import { parseReport } from "./procedures.js?v=20260827-142201";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-142201";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-142201";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-142201";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-142201";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-142201";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-142201";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-142201";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-144201";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-144201";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-144201";
+import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-144201";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-144201";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-144201";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-144201";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-144201";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-144201";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-144201";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-144201";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-144201";
+import { parseReport } from "./procedures.js?v=20260827-144201";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-144201";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-144201";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-144201";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-144201";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-144201";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-144201";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-144201";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -282,11 +282,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-142201")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-144201")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-142201")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-144201")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -295,14 +295,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-142201")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-144201")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-142201")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-144201")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -590,6 +590,34 @@ check("напоминание сохраняет свой отступ", follow?
 check("связи переносятся", follow?.linkedIds.includes("car1"));
 check("разовая задача не повторяется", nextTaskFrom({ ...service, frequency: null }, { now: AT }) === null);
 check("повторяемость опознаётся", isRepeating(service) && !isRepeating({ ...service, frequency: "" }));
+
+/* ---------- Records the owner typed ---------- */
+
+/* The bug this guards against: adding 50 BTC changed no total and said
+   nothing, because six of the nine money types were born "unverified" and an
+   unverified record is excluded from every sum. Whoever typed it is the only
+   person who could ever verify it. */
+for (const type of ["account", "crypto", "asset", "receivable", "payable", "investment", "security"]) {
+  const typed = blankRecord(type, { entered: true });
+  check(`введённая вручную запись «${type}» считается`,
+        ["confirmed", "active", "done", "paid"].includes(typed.status),
+        `получилось «${typed.status}»`);
+}
+
+/* Anything arriving from elsewhere keeps the cautious default, because it
+   genuinely has not been checked by anyone. */
+check("импортируемая запись остаётся непроверенной",
+      blankRecord("account").status === "unverified");
+
+check("подтверждающий статус выбирается по типу",
+      confirmedStatusFor("project") === "active" && confirmedStatusFor("account") === "confirmed",
+      `${confirmedStatusFor("project")} / ${confirmedStatusFor("account")}`);
+
+/* And the whole point: a hand-entered holding must reach net worth. */
+const typedCoin = { ...blankRecord("crypto", { entered: true }), coin: "BTC", quantity: 50 };
+const withCoin = netWorth([typedCoin], "RUB", RATES);
+check("50 BTC попадают в чистый капитал", withCoin.totalMinor > 0, String(withCoin.totalMinor));
+check("и не числятся исключёнными", withCoin.excludedCount === 0);
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

@@ -6,14 +6,36 @@
       localStorage and Supabase in one unconfirmed click.
    2. Nothing is saved until safety.inspectRecord() clears it. */
 
-import * as store from "./store.js?v=20260827-142201";
-import { inspectRecord } from "./safety.js?v=20260827-142201";
-import { parseAmount } from "./money.js?v=20260827-142201";
-import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-142201";
+import * as store from "./store.js?v=20260827-144201";
+import { inspectRecord } from "./safety.js?v=20260827-144201";
+import { parseAmount } from "./money.js?v=20260827-144201";
+import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-144201";
 
 export const TRASH_DAYS = 30;
 
-export function blankRecord(type) {
+/* Whichever confirmed-like status a type actually supports. Types disagree —
+   an account is "confirmed", a project is "active", a task is "done" — and the
+   rule was written out three times before this. */
+export const confirmedStatusFor = (type) => {
+  const def = typeDef(type);
+  return ["confirmed", "active", "done", "paid"].find((status) => def?.statuses.includes(status)) || "confirmed";
+};
+
+/* `entered` means a person typed this into the form.
+ *
+ * Six of the nine money types defaulted to "unverified", and an unverified
+ * record is excluded from every total. So adding 50 BTC produced no change to
+ * anything, with no explanation — the app quietly disagreed that the holding
+ * existed. That is the worst possible failure for a product whose job is to
+ * be trusted with the numbers.
+ *
+ * The distinction that actually matters is provenance, not type. A record the
+ * owner typed has been verified by the only person who can verify it. A record
+ * that arrived from a CSV, another device or a device sync has not, and those
+ * paths set their own status explicitly. The field stays editable, so marking
+ * a rough valuation as unverified is still one tap away — it is simply no
+ * longer the silent default. */
+export function blankRecord(type, { entered = false } = {}) {
   const def = typeDef(type) || TYPES.note;
   return {
     id: store.newId(type),
@@ -40,7 +62,7 @@ export function blankRecord(type) {
     dueDate: null,
     endDate: null,
     expiresAt: null,
-    status: def.defaultStatus,
+    status: entered ? confirmedStatusFor(type) : def.defaultStatus,
     priority: "medium",
     terms: "",
     rate: null,
@@ -141,19 +163,14 @@ function defaultName(record) {
 export async function confirmRecord(id) {
   const record = store.byId(id);
   if (!record) return { ok: false };
-  const def = typeDef(record.type);
-  // Move to whichever confirmed-like status this type actually supports.
-  const target = ["confirmed", "active", "done", "paid"].find((status) => def?.statuses.includes(status)) || "confirmed";
-  return patchRecord(id, { status: target }, "record-confirmed");
+  return patchRecord(id, { status: confirmedStatusFor(record.type) }, "record-confirmed");
 }
 
 export async function confirmMany(ids) {
   const stamp = new Date().toISOString();
   const result = await store.commit((records) => records.map((record) => {
     if (!ids.includes(record.id)) return record;
-    const def = typeDef(record.type);
-    const target = ["confirmed", "active", "done", "paid"].find((status) => def?.statuses.includes(status)) || "confirmed";
-    return { ...record, status: target, updatedAt: stamp };
+    return { ...record, status: confirmedStatusFor(record.type), updatedAt: stamp };
   }), "record-confirmed");
   if (result.ok) store.pushAudit({ action: "confirmed", name: String(ids.length) });
   return result;
