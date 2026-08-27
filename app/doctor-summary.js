@@ -14,10 +14,10 @@
  * arithmetic on dates. How long ago something was measured is a fact about a
  * calendar and is genuinely useful to the person reading it. */
 
-import { byAnalyte } from "./labs-parse.js?v=20260827-150013";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-150013";
-import { resolutions, resolutionState } from "./resolved.js?v=20260827-150013";
-import { routeFor } from "./lab-routing.js?v=20260827-150013";
+import { byAnalyte } from "./labs-parse.js?v=20260827-150156";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-150156";
+import { resolutions, resolutionState } from "./resolved.js?v=20260827-150156";
+import { routeFor } from "./lab-routing.js?v=20260827-150156";
 
 const DAY = 86_400_000;
 const monthsSince = (date, now) =>

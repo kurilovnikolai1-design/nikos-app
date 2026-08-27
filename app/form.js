@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-150013";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-150013";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-150013";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-150013";
-import { COINS } from "./rates.js?v=20260827-150013";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-150013";
-import * as store from "./store.js?v=20260827-150013";
-import * as records from "./records.js?v=20260827-150013";
-import * as attachments from "./attachments.js?v=20260827-150013";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-150156";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-150156";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-150156";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-150156";
+import { COINS } from "./rates.js?v=20260827-150156";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-150156";
+import * as store from "./store.js?v=20260827-150156";
+import * as records from "./records.js?v=20260827-150156";
+import * as attachments from "./attachments.js?v=20260827-150156";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -351,6 +351,22 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
 
       case "recurrence":
         return recurrenceField();
+
+      /* A one-off is real money that happened and a terrible guide to what
+         next month will cost. It stays in the month's totals and is kept out
+         of every average. */
+      case "oneOff":
+        return field(getLocale() === "ru" ? "Разовое" : "One-off",
+          el("label", { class: "switch" }, [
+            el("input", {
+              type: "checkbox", checked: draft.oneOff ? "checked" : null,
+              onchange: (event) => set("oneOff", event.target.checked || null)
+            }),
+            el("span", { class: "switch-track", "aria-hidden": "true" })
+          ]),
+          { hint: getLocale() === "ru"
+              ? "Покупка машины, ремонт, лечение — не попадёт в средний расход"
+              : "A car, a renovation, a treatment — kept out of the monthly average" });
 
       case "file":
         return fileField();

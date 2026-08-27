@@ -13,7 +13,7 @@
  * Kept small on purpose. A handful of dated copies, oldest dropped, so a year
  * of history never quietly consumes the space the live records need. */
 
-import * as idb from "./idb.js?v=20260827-150013";
+import * as idb from "./idb.js?v=20260827-150156";
 
 const PREFIX = "backup:";
 

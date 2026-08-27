@@ -15,8 +15,8 @@
  * vault is not — or the reverse — would be a promise broken in one direction
  * or a nuisance in the other. */
 
-import * as idb from "./idb.js?v=20260827-150013";
-import * as lock from "./lock.js?v=20260827-150013";
+import * as idb from "./idb.js?v=20260827-150156";
+import * as lock from "./lock.js?v=20260827-150156";
 
 const PREFIX = "file:";
 

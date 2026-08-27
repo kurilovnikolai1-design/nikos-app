@@ -19,7 +19,7 @@
  *   excluded and why; that count is carried through, because "осталось 40 000"
  *   is a different statement when three expenses were not counted. */
 
-import { cashflow, periodRange, monthKey } from "./finance.js?v=20260827-150013";
+import { cashflow, periodRange, monthKey } from "./finance.js?v=20260827-150156";
 
 export const BUDGET_STATE = {
   UNSET: "unset",
@@ -42,10 +42,15 @@ const daysInMonth = (now = new Date()) =>
 /* What the last few complete months actually cost. Offered as a starting
    point for a limit — an observation about the past, not a recommendation. */
 export function typicalMonthlySpend(records, base, rates, { months = 3 } = {}) {
+  /* One-off spending is excluded from the average on purpose: a month
+     containing a car purchase says nothing about what next month costs, and
+     leaving it in would set a budget nobody could keep. */
+  const ordinary = records.filter((record) => !record.oneOff);
+
   const totals = [];
   for (let offset = 1; offset <= months; offset += 1) {
     const range = periodRange("month", -offset);
-    const flow = cashflow(records, base, rates, range);
+    const flow = cashflow(ordinary, base, rates, range);
     /* A month with nothing in it is a month that was not tracked, not a month
        that cost nothing — averaging it in would understate the figure. */
     if (flow.expenseRecords.length) totals.push(flow.expenseMinor);
