@@ -1,18 +1,19 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-083244";
+import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-084202";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-083244";
-import { formatMoney } from "../money.js?v=20260827-083244";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-083244";
-import { categoriesOf } from "../schema.js?v=20260827-083244";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-083244";
-import { openRecordForm } from "../form.js?v=20260827-083244";
-import { importCsv } from "../csv.js?v=20260827-083244";
-import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-083244";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-083244";
-import * as store from "../store.js?v=20260827-083244";
-import * as records from "../records.js?v=20260827-083244";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-084202";
+import { formatMoney } from "../money.js?v=20260827-084202";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-084202";
+import { categoriesOf } from "../schema.js?v=20260827-084202";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-084202";
+import { openRecordForm } from "../form.js?v=20260827-084202";
+import { importCsv } from "../csv.js?v=20260827-084202";
+import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-084202";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-084202";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-084202";
+import * as store from "../store.js?v=20260827-084202";
+import * as records from "../records.js?v=20260827-084202";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -170,6 +171,24 @@ export function healthView() {
     ]));
 
     host.append(el("div", { class: "metric-grid" }, cards));
+
+    const observations = healthInsights(days, all, { locale: getLocale() });
+    if (observations.length) {
+      host.append(panel("insight-panel",
+        panelHeader(ru() ? "ЧТО ВИДНО В ЦИФРАХ" : "WHAT THE NUMBERS SHOW",
+          ru() ? "Наблюдения, а не советы" : "Observations, not advice"),
+        el("div", { class: "insight-list" }, observations.map((item) =>
+          el("div", { class: `insight tone-${item.tone}` }, [
+            el("span", { class: "insight-mark", "aria-hidden": "true",
+                         text: item.tone === "warn" ? "!" : item.tone === "good" ? "↗" : "·" }),
+            el("span", {}, [
+              el("strong", { text: item.title }),
+              el("p", { text: item.text }),
+              el("small", { text: item.sample })
+            ])
+          ]))),
+        el("p", { class: "panel-note", text: ru() ? DISCLAIMER.ru : DISCLAIMER.en })));
+    }
 
     /* Twelve months at a glance beats a thousand points of noise. */
     const trends = DAY_METRICS

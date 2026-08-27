@@ -654,6 +654,26 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .trend-foot b { font-family: var(--mono); font-size: var(--step-md); }
 .trend-foot small { color: var(--faint); font-size: var(--step-xs); }
 
+/* ------------------------------------------------------------- insights */
+
+.insight-list { display: grid; gap: 3px; }
+.insight {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr);
+  align-items: start; gap: 12px;
+  padding: 12px; border-radius: var(--radius-sm);
+}
+.insight:hover { background: var(--surface-2); }
+.insight strong { display: block; font-size: var(--step-sm); font-weight: 600; margin-bottom: 3px; }
+.insight p { color: var(--muted); font-size: var(--step-sm); line-height: 1.5; }
+.insight small { display: block; margin-top: 5px; color: var(--faint); font-size: var(--step-xs); }
+.insight-mark {
+  display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 8px;
+  background: var(--surface-3); color: var(--muted); font-size: var(--step-sm);
+}
+.insight.tone-warn .insight-mark { background: color-mix(in srgb, var(--amber) 20%, transparent); color: var(--amber); }
+.insight.tone-good .insight-mark { background: color-mix(in srgb, var(--green) 20%, transparent); color: var(--green); }
+
 /* ---------------------------------------------------------------- days */
 
 /* A year of a wearable is about 1500 readings. As a flat list that is
