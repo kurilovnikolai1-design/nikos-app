@@ -1099,6 +1099,39 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .project-money-row small { color: var(--faint); font-size: var(--step-xs); }
 .project-money-row small.warn { color: var(--warn); }
 
+/* The net-worth line: the change is the headline, the line is the evidence. */
+.networth-chart { display: grid; gap: 8px; margin-bottom: 16px; }
+.networth-head {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
+}
+.networth-head .panel-kicker { flex-basis: 100%; }
+.networth-head b {
+  font-size: var(--step-lg); font-weight: 800;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+}
+.networth-head b.positive { color: var(--good, #3e8e6e); }
+.networth-head b.negative { color: var(--danger, #d9534f); }
+.networth-head small { color: var(--faint); font-size: var(--step-xs); }
+
+/* Regular payments: name, what kind, and the monthly figure lined up. */
+.recurring-list { display: grid; gap: 4px; }
+.recurring-row {
+  display: grid; align-items: baseline; gap: 2px 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%; text-align: left; padding: 10px 12px;
+  border: 0; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text); cursor: pointer;
+}
+.recurring-row:hover { background: var(--surface-2); }
+.recurring-name { font-weight: 600; font-size: var(--step-sm); min-width: 0; overflow-wrap: anywhere; }
+.recurring-row small { grid-column: 1; color: var(--faint); font-size: var(--step-xs); }
+.recurring-row b {
+  grid-row: 1 / 3; grid-column: 2; align-self: center;
+  font-variant-numeric: tabular-nums; font-weight: 700;
+}
+.recurring-row.expense b { color: var(--danger, #d9534f); }
+.recurring-row.income b { color: var(--good, #3e8e6e); }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

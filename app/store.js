@@ -5,8 +5,8 @@
    the whole localStorage blob. Here the data lives in one place, the DOM is
    only ever a projection of it, and nothing is inferred from rendered text. */
 
-import * as persist from "./persist.js?v=20260827-140121";
-import { isLive, TYPES } from "./schema.js?v=20260827-140121";
+import * as persist from "./persist.js?v=20260827-142201";
+import { isLive, TYPES } from "./schema.js?v=20260827-142201";
 
 const DEFAULT_SETTINGS = {
   baseCurrency: "RUB",
@@ -80,6 +80,39 @@ export const archivedRecords = () => state.records.filter((record) => !record.de
 
 /* Every mutation goes through here so persistence, indexing and repaint
    stay in lockstep and a failed write is never mistaken for a success. */
+/* One step back.
+ *
+ * Every commit already keeps the previous array in hand so it can roll back a
+ * failed write. Keeping that same array one moment longer turns it into undo,
+ * which costs nothing: the objects are shared, only the array is copied.
+ *
+ * Deliberately one level. A stack invites people to walk backwards through
+ * changes they no longer remember, and the case that actually matters is the
+ * one immediately after "я не то нажал". */
+let lastChange = null;
+
+export const canUndo = () => lastChange !== null;
+export const undoDescription = () => lastChange?.reason ?? null;
+
+export async function undoLast() {
+  if (!lastChange) return { ok: false, reason: "nothing-to-undo" };
+  const snapshot = lastChange;
+  lastChange = null;                      /* undoing is not itself undoable */
+
+  const result = await commit(() => snapshot.records.slice(), "undo");
+  if (result.ok) {
+    lastChange = null;
+    pushAudit({ action: "undo", type: "—", recordId: "—", name: snapshot.reason });
+  }
+  return result;
+}
+
+/* Some changes are not worth offering back — a settings toggle, an undo. */
+const UNDOABLE = new Set([
+  "record-created", "record-updated", "record-deleted",
+  "record-archived", "record-restored", "record-purged", "records-imported"
+]);
+
 export async function commit(mutate, reason = "change") {
   const previous = state.records;
   const next = mutate(previous.slice());
@@ -99,6 +132,7 @@ export async function commit(mutate, reason = "change") {
     return { ok: false, reason: written.result };
   }
   state.saveError = null;
+  if (UNDOABLE.has(reason)) lastChange = { records: previous, reason, at: Date.now() };
   return { ok: true };
 }
 

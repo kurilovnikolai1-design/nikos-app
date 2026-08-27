@@ -5,15 +5,15 @@
    simply could not see twelve of them. Here a list always states how many
    records it holds and can always show all of them. */
 
-import { el, emptyState, confirmDialog, toast } from "./ui.js?v=20260827-140121";
+import { el, emptyState, confirmDialog, toast } from "./ui.js?v=20260827-142201";
 import { t, getLocale, statusLabel, statusTone, categoryLabel, typeLabel, ownerLabel,
-         confidenceLabel, formatDate, relativeDays, formatNumber, countOf, PLURALS } from "./i18n.js?v=20260827-140121";
-import { TYPES, isVerified, BALANCE_ROLE } from "./schema.js?v=20260827-140121";
-import { formatMoney, formatQuantity } from "./money.js?v=20260827-140121";
-import { cryptoUsdPrice } from "./rates.js?v=20260827-140121";
-import * as store from "./store.js?v=20260827-140121";
-import * as records from "./records.js?v=20260827-140121";
-import { openRecordForm } from "./form.js?v=20260827-140121";
+         confidenceLabel, formatDate, relativeDays, formatNumber, countOf, PLURALS } from "./i18n.js?v=20260827-142201";
+import { TYPES, isVerified, BALANCE_ROLE } from "./schema.js?v=20260827-142201";
+import { formatMoney, formatQuantity } from "./money.js?v=20260827-142201";
+import { cryptoUsdPrice } from "./rates.js?v=20260827-142201";
+import * as store from "./store.js?v=20260827-142201";
+import * as records from "./records.js?v=20260827-142201";
+import { openRecordForm } from "./form.js?v=20260827-142201";
 
 const PAGE_SIZE = 8;
 const expanded = new Set();
@@ -77,7 +77,13 @@ export function recordRow(record, { compact = false, onChange = refresh } = {}) 
       const result = record.status === "archived"
         ? await records.unarchiveRecord(record.id)
         : await records.archiveRecord(record.id);
-      if (result.ok) { toast(record.status === "archived" ? t("app.restore") : t("rec.archived")); onChange(); }
+      if (!result.ok) return;
+      onChange();
+      toast(record.status === "archived" ? t("app.restore") : t("rec.archived"), {
+        action: store.canUndo()
+          ? { label: t("rec.undo"), run: async () => { await store.undoLast(); onChange(); } }
+          : null
+      });
     }));
 
   actions.append(iconButton("✕", t("app.delete"), async () => {

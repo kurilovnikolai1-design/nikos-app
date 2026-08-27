@@ -2,29 +2,29 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-140121";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-140121";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-142201";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-142201";
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-140121";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-140121";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-140121";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-140121";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-140121";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-140121";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-140121";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-140121";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-140121";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-140121";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-140121";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-140121";
-import { parseReport } from "./procedures.js?v=20260827-140121";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-140121";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-140121";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-140121";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-140121";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-140121";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-140121";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-140121";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-142201";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-142201";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-142201";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-142201";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-142201";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-142201";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-142201";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-142201";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-142201";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-142201";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-142201";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-142201";
+import { parseReport } from "./procedures.js?v=20260827-142201";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-142201";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-142201";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-142201";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-142201";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-142201";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-142201";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-142201";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -282,11 +282,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-140121")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-142201")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-140121")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-142201")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -295,14 +295,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-140121")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-142201")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-140121")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-142201")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",

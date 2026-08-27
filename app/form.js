@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-140121";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-140121";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-140121";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-140121";
-import { COINS } from "./rates.js?v=20260827-140121";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-140121";
-import * as store from "./store.js?v=20260827-140121";
-import * as records from "./records.js?v=20260827-140121";
-import * as attachments from "./attachments.js?v=20260827-140121";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-142201";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-142201";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-142201";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-142201";
+import { COINS } from "./rates.js?v=20260827-142201";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-142201";
+import * as store from "./store.js?v=20260827-142201";
+import * as records from "./records.js?v=20260827-142201";
+import * as attachments from "./attachments.js?v=20260827-142201";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -647,7 +647,29 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
     if (!saved.ok) { toast(t("sec.storageFull"), { tone: "danger" }); return; }
 
     dialog.close();
-    toast(existing ? t("rec.updated") : t("rec.saved"), { tone: "success" });
+
+    /* Editing used to be the one change with no way back: a form saved over
+       the old values and they were gone. Deleting always had undo; this gives
+       editing the same. */
+    if (existing && store.canUndo()) {
+      toast(t("rec.updated"), {
+        tone: "success",
+        action: {
+          label: t("rec.undo"),
+          run: async () => {
+            const undone = await store.undoLast();
+            toast(undone.ok
+              ? (getLocale() === "ru" ? "Изменение отменено" : "Change undone")
+              : (getLocale() === "ru" ? "Не удалось отменить" : "Could not undo"),
+              { tone: undone.ok ? "info" : "danger" });
+            onSaved?.(saved.record);
+          }
+        }
+      });
+    } else {
+      toast(existing ? t("rec.updated") : t("rec.saved"), { tone: "success" });
+    }
+
     onSaved?.(saved.record);
   }
 }

@@ -1,20 +1,20 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-140121";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-142201";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-140121";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-140121";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-140121";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-140121";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-140121";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-140121";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-140121";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-140121";
-import { isVerified } from "../schema.js?v=20260827-140121";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-140121";
-import { openRecordForm } from "../form.js?v=20260827-140121";
-import * as store from "../store.js?v=20260827-140121";
-import * as records from "../records.js?v=20260827-140121";
+         PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-142201";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-142201";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-142201";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-142201";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-142201";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-142201";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-142201";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-142201";
+import { isVerified } from "../schema.js?v=20260827-142201";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-142201";
+import { openRecordForm } from "../form.js?v=20260827-142201";
+import * as store from "../store.js?v=20260827-142201";
+import * as records from "../records.js?v=20260827-142201";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -182,11 +182,51 @@ export function capitalView() {
 
   page.append(panel("snapshot-panel",
     panelHeader(ru() ? "ИСТОРИЯ" : "HISTORY", t("money.snapshotHistory")),
+    /* Snapshots have been recorded since the rebuild and only ever listed. A
+       list of figures answers "сколько было тогда"; the line answers "куда
+       это идёт", which is the reason to keep them. */
+    netWorthChart(snapshots),
     snapshots.length
       ? el("div", { class: "snapshot-list" }, snapshots.slice(0, 12).map(snapshotRow))
       : emptyState(t("money.snapshotEmpty"), t("money.takeSnapshot"), takeSnapshot)));
 
   return page;
+
+  /* One point per snapshot, oldest first, plus today's figure at the end so
+     the line reaches the present instead of stopping at the last time the
+     owner remembered to take one. */
+  function netWorthChart(list) {
+    const points = [...list]
+      .filter((record) => Number.isFinite(record.snapshot?.totalMinor) && record.date)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+      .map((record) => ({ date: record.date, value: record.snapshot.totalMinor / 100 }));
+
+    if (worth.hasAnything) {
+      const today = records.today();
+      if (!points.length || points.at(-1).date !== today) {
+        points.push({ date: today, value: worth.totalMinor / 100 });
+      }
+    }
+
+    /* Two points is a line between two moments, not a history. */
+    if (points.length < 3) return null;
+
+    const first = points[0];
+    const last = points.at(-1);
+    const changeMinor = Math.round((last.value - first.value) * 100);
+
+    return el("div", { class: "networth-chart" }, [
+      el("div", { class: "networth-head" }, [
+        el("span", { class: "panel-kicker", text: ru() ? "ЧИСТЫЙ КАПИТАЛ ПО СНИМКАМ" : "NET WORTH BY SNAPSHOT" }),
+        el("b", { class: changeMinor >= 0 ? "positive" : "negative",
+                  text: `${changeMinor > 0 ? "+" : ""}${money(changeMinor)}` }),
+        el("small", { text: ru()
+          ? `с ${formatDate(first.date, "medium").replace(/\.$/, "")}`
+          : `since ${formatDate(first.date, "medium")}` })
+      ]),
+      sparkline(points, { tone: changeMinor >= 0 ? "cyan" : "amber", height: 96 })
+    ]);
+  }
 
   function snapshotRow(record) {
     const payload = record.snapshot || {};
@@ -436,6 +476,42 @@ export function cashflowView() {
   if (note) {
     page.append(el("div", { class: "note-row" }, [note,
       confirmPendingButton(flow.excluded.unconfirmed, ru() ? "Подтвердить и посчитать" : "Confirm and count")]));
+  }
+
+  /* What leaves every month, itemised. The dashboard has shown the total
+     since the rebuild, and a total cannot be argued with — a list can: this
+     is where a forgotten subscription becomes visible. */
+  if (recurring.active.length) {
+    const monthly = recurring.active
+      .map((record) => ({ record, minor: monthlyEquivalentMinor(record, base(), store.getRates()) }))
+      .filter((entry) => entry.minor !== null)
+      .sort((a, b) => b.minor - a.minor);
+
+    page.append(panel("records-panel recurring-panel",
+      panelHeader(ru() ? "УХОДИТ КАЖДЫЙ МЕСЯЦ" : "LEAVES EVERY MONTH",
+        ru() ? `${money(recurring.expenseMinor)} расходов, ${money(recurring.incomeMinor)} доходов`
+             : `${money(recurring.expenseMinor)} out, ${money(recurring.incomeMinor)} in`),
+
+      el("div", { class: "recurring-list" }, monthly.map(({ record, minor }) => el("button", {
+        class: `recurring-row ${record.type}`, type: "button",
+        onclick: () => openRecordForm(record.type, record, { onSaved: refresh })
+      }, [
+        el("span", { class: "recurring-name", text: record.name }),
+        el("small", { text: [categoryLabel(record.type, record.category),
+                             record.frequency ? frequencyLabel(record.frequency) : null]
+                             .filter(Boolean).join(" · ") }),
+        el("b", { text: `${record.type === "expense" ? "−" : "+"}${money(minor)}` })
+      ]))),
+
+      recurring.noRate.length
+        ? el("p", { class: "panel-note warn", text: ru()
+            ? `Без курса, не в сумме: ${recurring.noRate.length}.`
+            : `${recurring.noRate.length} have no rate and are not counted.` })
+        : null,
+
+      el("p", { class: "panel-note", text: ru()
+        ? "Суммы приведены к месяцу: годовой платёж делится на двенадцать, недельный умножается."
+        : "Amounts are shown per month: a yearly payment is divided by twelve, a weekly one multiplied." })));
   }
 
   if (flow.byCategory.length) {
