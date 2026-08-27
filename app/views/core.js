@@ -1,16 +1,16 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-055819";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-055925";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-055819";
-import { formatMoney } from "../money.js?v=20260827-055819";
-import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-055819";
-import { buildAttention } from "../attention.js?v=20260827-055819";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-055819";
-import { openRecordForm } from "../form.js?v=20260827-055819";
-import { navigate } from "../router.js?v=20260827-055819";
-import * as store from "../store.js?v=20260827-055819";
-import * as records from "../records.js?v=20260827-055819";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-055925";
+import { formatMoney } from "../money.js?v=20260827-055925";
+import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-055925";
+import { buildAttention } from "../attention.js?v=20260827-055925";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-055925";
+import { openRecordForm } from "../form.js?v=20260827-055925";
+import { navigate } from "../router.js?v=20260827-055925";
+import * as store from "../store.js?v=20260827-055925";
+import * as records from "../records.js?v=20260827-055925";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";

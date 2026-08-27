@@ -1,17 +1,17 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-055819";
+import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-055925";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-055819";
-import { formatMoney } from "../money.js?v=20260827-055819";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-055819";
-import { categoriesOf } from "../schema.js?v=20260827-055819";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-055819";
-import { openRecordForm } from "../form.js?v=20260827-055819";
-import { importCsv } from "../csv.js?v=20260827-055819";
-import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-055819";
-import * as store from "../store.js?v=20260827-055819";
-import * as records from "../records.js?v=20260827-055819";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-055925";
+import { formatMoney } from "../money.js?v=20260827-055925";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-055925";
+import { categoriesOf } from "../schema.js?v=20260827-055925";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-055925";
+import { openRecordForm } from "../form.js?v=20260827-055925";
+import { importCsv } from "../csv.js?v=20260827-055925";
+import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-055925";
+import * as store from "../store.js?v=20260827-055925";
+import * as records from "../records.js?v=20260827-055925";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
