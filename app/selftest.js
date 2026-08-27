@@ -2,12 +2,12 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js";
-import { assertSchemaIsSound } from "./schema.js";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js";
-import { migrateRecord, migrateAll } from "./records.js";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-054122";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-054122";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-054122";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-054122";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-054122";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-054122";
 
 const VIEWS = ["command", "inbox", "tasks", "projects", "capital", "debts", "cashflow", "investments",
   "crypto", "assets", "health", "documents", "people", "decisions", "timeline", "settings"];

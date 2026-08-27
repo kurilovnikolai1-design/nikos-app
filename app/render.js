@@ -5,15 +5,15 @@
    simply could not see twelve of them. Here a list always states how many
    records it holds and can always show all of them. */
 
-import { el, emptyState, confirmDialog, toast } from "./ui.js";
+import { el, emptyState, confirmDialog, toast } from "./ui.js?v=20260827-054122";
 import { t, getLocale, statusLabel, statusTone, categoryLabel, typeLabel, ownerLabel,
-         confidenceLabel, formatDate, relativeDays, formatNumber, countOf, PLURALS } from "./i18n.js";
-import { TYPES, isVerified, BALANCE_ROLE } from "./schema.js";
-import { formatMoney, formatQuantity } from "./money.js";
-import { cryptoUsdPrice } from "./rates.js";
-import * as store from "./store.js";
-import * as records from "./records.js";
-import { openRecordForm } from "./form.js";
+         confidenceLabel, formatDate, relativeDays, formatNumber, countOf, PLURALS } from "./i18n.js?v=20260827-054122";
+import { TYPES, isVerified, BALANCE_ROLE } from "./schema.js?v=20260827-054122";
+import { formatMoney, formatQuantity } from "./money.js?v=20260827-054122";
+import { cryptoUsdPrice } from "./rates.js?v=20260827-054122";
+import * as store from "./store.js?v=20260827-054122";
+import * as records from "./records.js?v=20260827-054122";
+import { openRecordForm } from "./form.js?v=20260827-054122";
 
 const PAGE_SIZE = 8;
 const expanded = new Set();

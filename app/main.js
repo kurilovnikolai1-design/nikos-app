@@ -1,25 +1,25 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-054122";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js";
-import { assertSchemaIsSound, TYPES } from "./schema.js";
-import { buildAttention } from "./attention.js";
-import { refresh, recordRow } from "./render.js";
-import { openRecordForm, ensureCoinList } from "./form.js";
-import { scheduleRateRefresh } from "./main-rates.js";
-import { selfTest as safetySelfTest } from "./safety.js";
-import * as lock from "./lock.js";
-import * as persist from "./persist.js";
-import * as store from "./store.js";
-import * as records from "./records.js";
-import * as cloud from "./cloud.js";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-054122";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-054122";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-054122";
+import { buildAttention } from "./attention.js?v=20260827-054122";
+import { refresh, recordRow } from "./render.js?v=20260827-054122";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-054122";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-054122";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-054122";
+import * as lock from "./lock.js?v=20260827-054122";
+import * as persist from "./persist.js?v=20260827-054122";
+import * as store from "./store.js?v=20260827-054122";
+import * as records from "./records.js?v=20260827-054122";
+import * as cloud from "./cloud.js?v=20260827-054122";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js";
-import { assetsView, healthView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js";
-import { settingsView } from "./views/settings.js";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-054122";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-054122";
+import { assetsView, healthView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-054122";
+import { settingsView } from "./views/settings.js?v=20260827-054122";
 
 const ru = () => getLocale() === "ru";
 

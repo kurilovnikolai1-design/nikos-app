@@ -1,17 +1,17 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js";
-import { refresh, pageHeading, recordList } from "../render.js";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js";
-import * as lock from "../lock.js";
-import * as persist from "../persist.js";
-import * as store from "../store.js";
-import * as records from "../records.js";
-import * as cloud from "../cloud.js";
-import { refreshRates } from "../main-rates.js";
-import { loadDemoData } from "../demo.js";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-054122";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-054122";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-054122";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-054122";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-054122";
+import * as lock from "../lock.js?v=20260827-054122";
+import * as persist from "../persist.js?v=20260827-054122";
+import * as store from "../store.js?v=20260827-054122";
+import * as records from "../records.js?v=20260827-054122";
+import * as cloud from "../cloud.js?v=20260827-054122";
+import { refreshRates } from "../main-rates.js?v=20260827-054122";
+import { loadDemoData } from "../demo.js?v=20260827-054122";
 
 const ru = () => getLocale() === "ru";
 
@@ -474,7 +474,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js");
+                       const suite = await import("../selftest.js?v=20260827-054122");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

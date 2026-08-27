@@ -1,16 +1,16 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js";
+import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-054122";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js";
-import { formatMoney } from "../money.js";
-import { netWorth, periodRange, sportSummary } from "../finance.js";
-import { categoriesOf } from "../schema.js";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js";
-import { openRecordForm } from "../form.js";
-import { importCsv } from "../csv.js";
-import * as store from "../store.js";
-import * as records from "../records.js";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-054122";
+import { formatMoney } from "../money.js?v=20260827-054122";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-054122";
+import { categoriesOf } from "../schema.js?v=20260827-054122";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-054122";
+import { openRecordForm } from "../form.js?v=20260827-054122";
+import { importCsv } from "../csv.js?v=20260827-054122";
+import * as store from "../store.js?v=20260827-054122";
+import * as records from "../records.js?v=20260827-054122";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
