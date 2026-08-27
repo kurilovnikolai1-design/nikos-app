@@ -5,7 +5,7 @@
    into the page behind an open form, and on a phone the background scrolled
    under it. One implementation here fixes all of that in one place. */
 
-import { t } from "./i18n.js?v=20260827-145737";
+import { t } from "./i18n.js?v=20260827-150013";
 
 export const $ = (selector, scope = document) => scope.querySelector(selector);
 export const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];

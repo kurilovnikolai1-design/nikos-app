@@ -5,15 +5,15 @@
    simply could not see twelve of them. Here a list always states how many
    records it holds and can always show all of them. */
 
-import { el, emptyState, confirmDialog, toast } from "./ui.js?v=20260827-145737";
+import { el, emptyState, confirmDialog, toast } from "./ui.js?v=20260827-150013";
 import { t, getLocale, statusLabel, statusTone, categoryLabel, typeLabel, ownerLabel,
-         confidenceLabel, formatDate, relativeDays, formatNumber, countOf, PLURALS } from "./i18n.js?v=20260827-145737";
-import { TYPES, isVerified, BALANCE_ROLE } from "./schema.js?v=20260827-145737";
-import { formatMoney, formatQuantity } from "./money.js?v=20260827-145737";
-import { cryptoUsdPrice } from "./rates.js?v=20260827-145737";
-import * as store from "./store.js?v=20260827-145737";
-import * as records from "./records.js?v=20260827-145737";
-import { openRecordForm } from "./form.js?v=20260827-145737";
+         confidenceLabel, formatDate, relativeDays, formatNumber, countOf, PLURALS } from "./i18n.js?v=20260827-150013";
+import { TYPES, isVerified, BALANCE_ROLE } from "./schema.js?v=20260827-150013";
+import { formatMoney, formatQuantity } from "./money.js?v=20260827-150013";
+import { cryptoUsdPrice } from "./rates.js?v=20260827-150013";
+import * as store from "./store.js?v=20260827-150013";
+import * as records from "./records.js?v=20260827-150013";
+import { openRecordForm } from "./form.js?v=20260827-150013";
 
 const PAGE_SIZE = 8;
 const expanded = new Set();

@@ -1,29 +1,29 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-145737";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-150013";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-145737";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-145737";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-145737";
-import { buildAttention } from "./attention.js?v=20260827-145737";
-import { refresh, recordRow } from "./render.js?v=20260827-145737";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-145737";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-145737";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-145737";
-import * as lock from "./lock.js?v=20260827-145737";
-import * as persist from "./persist.js?v=20260827-145737";
-import * as store from "./store.js?v=20260827-145737";
-import * as records from "./records.js?v=20260827-145737";
-import * as cloud from "./cloud.js?v=20260827-145737";
-import * as notify from "./notify.js?v=20260827-145737";
-import * as attachments from "./attachments.js?v=20260827-145737";
-import * as backups from "./backups.js?v=20260827-145737";
-import * as whoop from "./whoop.js?v=20260827-145737";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-150013";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-150013";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-150013";
+import { buildAttention } from "./attention.js?v=20260827-150013";
+import { refresh, recordRow } from "./render.js?v=20260827-150013";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-150013";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-150013";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-150013";
+import * as lock from "./lock.js?v=20260827-150013";
+import * as persist from "./persist.js?v=20260827-150013";
+import * as store from "./store.js?v=20260827-150013";
+import * as records from "./records.js?v=20260827-150013";
+import * as cloud from "./cloud.js?v=20260827-150013";
+import * as notify from "./notify.js?v=20260827-150013";
+import * as attachments from "./attachments.js?v=20260827-150013";
+import * as backups from "./backups.js?v=20260827-150013";
+import * as whoop from "./whoop.js?v=20260827-150013";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-145737";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-145737";
-import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-145737";
-import { settingsView } from "./views/settings.js?v=20260827-145737";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-150013";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-150013";
+import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-150013";
+import { settingsView } from "./views/settings.js?v=20260827-150013";
 
 const ru = () => getLocale() === "ru";
 
@@ -323,6 +323,53 @@ function configureIdleLock() {
 
 /* ---------- Search ---------- */
 
+/* Everything about a record that is worth finding it by, including the places
+   the old search never looked: a ticker, an attached file's name, the
+   exercises inside a workout. */
+function searchableParts(record) {
+  const parts = [
+    { label: null, text: record.name },
+    { label: "заметка", text: record.details },
+    { label: "кто/где", text: record.counterparty },
+    { label: "источник", text: record.source },
+    { label: "условия", text: record.terms },
+    { label: "монета", text: record.coin },
+    { label: "тикер", text: record.ticker },
+    { label: "обоснование", text: record.reasoning },
+    { label: "файл", text: record.attachment?.name },
+    { label: "единица", text: record.unit }
+  ];
+
+  if (Array.isArray(record.sets) && record.sets.length) {
+    parts.push({ label: "упражнения", text: record.sets.map((entry) => entry?.exercise).filter(Boolean).join(", ") });
+  }
+  return parts.filter((part) => part.text);
+}
+
+/* All words must appear somewhere, though not necessarily in the same field. */
+function matchRecord(record, words) {
+  if (!words.length) return null;
+  const parts = searchableParts(record);
+  if (!parts.length) return null;
+
+  const haystack = parts.map((part) => String(part.text).toLowerCase());
+  const nameText = haystack[0] ?? "";
+
+  let score = 0;
+  const found = new Set();
+
+  for (const word of words) {
+    const at = haystack.findIndex((text) => text.includes(word));
+    if (at < 0) return null;
+    if (at === 0) score += 2; else score += 1;
+    if (at > 0 && parts[at].label) found.add(parts[at].label);
+  }
+
+  if (nameText.startsWith(words[0])) score += 3;
+
+  return { score, where: found.size ? `найдено в: ${[...found].join(", ")}` : null };
+}
+
 function openSearch() {
   const input = el("input", {
     class: "search-input", type: "search", placeholder: t("app.searchPlaceholder"),
@@ -350,23 +397,35 @@ function openSearch() {
         el("span", { text: "↗" })
       ]));
 
-    const recordHits = (query
-      ? store.liveRecords().filter((record) =>
-          [record.name, record.details, record.counterparty, record.source, record.terms, record.coin]
-            .filter(Boolean).join(" ").toLowerCase().includes(query))
-      : [...store.liveRecords()].sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt))))
-      .slice(0, 30)
-      .map((record) => el("button", {
-        class: "search-result", type: "button",
-        onclick: () => { dialog.close(); openRecordForm(record.type, record, { onSaved: refresh }); }
-      }, [
-        el("span", { class: "search-icon", text: TYPES[record.type]?.icon || "◈" }),
-        el("span", {}, [
-          el("strong", { text: record.name }),
-          el("small", { text: `${typeLabel(record.type)} · ${categoryLabel(record.type, record.category)} · ${statusLabel(record.status)}` })
-        ]),
-        el("span", { text: "↗" })
-      ]));
+    /* Every word has to match, not the whole phrase as one string: typing
+       "игорь долг" found nothing, because no single field contains both. */
+    const words = query.split(/\s+/).filter(Boolean);
+
+    const matches = query
+      ? store.liveRecords()
+          .map((record) => ({ record, hit: matchRecord(record, words) }))
+          .filter((entry) => entry.hit)
+          /* A name match outranks a match buried in a note. */
+          .sort((a, b) => b.hit.score - a.hit.score
+            || String(b.record.updatedAt).localeCompare(String(a.record.updatedAt)))
+      : [...store.liveRecords()]
+          .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
+          .map((record) => ({ record, hit: null }));
+
+    const recordHits = matches.slice(0, 30).map(({ record, hit }) => el("button", {
+      class: "search-result", type: "button",
+      onclick: () => { dialog.close(); openRecordForm(record.type, record, { onSaved: refresh }); }
+    }, [
+      el("span", { class: "search-icon", text: TYPES[record.type]?.icon || "◈" }),
+      el("span", {}, [
+        el("strong", { text: record.name }),
+        el("small", { text: `${typeLabel(record.type)} · ${categoryLabel(record.type, record.category)} · ${statusLabel(record.status)}` }),
+        /* Where it matched, when that is not the name — otherwise a result
+           appears for no visible reason. */
+        hit?.where ? el("small", { class: "search-where", text: hit.where }) : null
+      ]),
+      el("span", { text: "↗" })
+    ]));
 
     const all = [...sectionHits, ...recordHits];
     mount(results, all.length ? all : [el("div", { class: "search-hint", text: query ? t("app.searchEmpty") : t("app.searchHint") })]);

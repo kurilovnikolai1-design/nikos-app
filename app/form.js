@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-145737";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-145737";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-145737";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-145737";
-import { COINS } from "./rates.js?v=20260827-145737";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-145737";
-import * as store from "./store.js?v=20260827-145737";
-import * as records from "./records.js?v=20260827-145737";
-import * as attachments from "./attachments.js?v=20260827-145737";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-150013";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-150013";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-150013";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-150013";
+import { COINS } from "./rates.js?v=20260827-150013";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-150013";
+import * as store from "./store.js?v=20260827-150013";
+import * as records from "./records.js?v=20260827-150013";
+import * as attachments from "./attachments.js?v=20260827-150013";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */

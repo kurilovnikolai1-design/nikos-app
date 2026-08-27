@@ -1172,6 +1172,9 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .bank-row.expense b { color: var(--danger, #d9534f); }
 .bank-row.income b { color: var(--good, #3e8e6e); }
 
+/* Why a search result appeared, when it was not the name that matched. */
+.search-where { color: var(--accent); font-size: var(--step-xs); }
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }
