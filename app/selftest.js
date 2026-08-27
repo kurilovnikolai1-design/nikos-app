@@ -2,29 +2,30 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-144201";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-144201";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-144534";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-144534";
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-144201";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-144201";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-144201";
-import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-144201";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-144201";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-144201";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-144201";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-144201";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-144201";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-144201";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-144201";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-144201";
-import { parseReport } from "./procedures.js?v=20260827-144201";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-144201";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-144201";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-144201";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-144201";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-144201";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-144201";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-144201";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-144534";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-144534";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-144534";
+import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-144534";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-144534";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-144534";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-144534";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-144534";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-144534";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-144534";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-144534";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-144534";
+import { parseReport } from "./procedures.js?v=20260827-144534";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-144534";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-144534";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-144534";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-144534";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-144534";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-144534";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-144534";
+import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260827-144534";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -282,11 +283,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-144201")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-144534")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-144201")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-144534")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -295,14 +296,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-144201")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-144534")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-144201")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-144534")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -618,6 +619,18 @@ const typedCoin = { ...blankRecord("crypto", { entered: true }), coin: "BTC", qu
 const withCoin = netWorth([typedCoin], "RUB", RATES);
 check("50 BTC попадают в чистый капитал", withCoin.totalMinor > 0, String(withCoin.totalMinor));
 check("и не числятся исключёнными", withCoin.excludedCount === 0);
+
+/* ---------- Backups ---------- */
+
+const DAY_MS = 86_400_000;
+check("без единой копии — копия нужна", isDue(null) === true);
+check("свежая копия не нужна повторно",
+      isDue(new Date(Date.now() - 2 * DAY_MS).toISOString()) === false);
+check("копия старше недели устарела",
+      isDue(new Date(Date.now() - 9 * DAY_MS).toISOString()) === true);
+check("испорченная дата трактуется как «копии нет»", isDue("не дата") === true,
+      "сомнение обязано решаться в пользу лишней копии");
+check("окно хранения задано", KEEP >= 4 && EVERY_DAYS >= 1);
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

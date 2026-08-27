@@ -1132,6 +1132,18 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .recurring-row.expense b { color: var(--danger, #d9534f); }
 .recurring-row.income b { color: var(--good, #3e8e6e); }
 
+/* Choosing which copy to go back to. */
+.restore-list { display: grid; gap: 8px; }
+.restore-row {
+  display: grid; gap: 2px; width: 100%; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  color: var(--text); cursor: pointer;
+}
+.restore-row:hover { border-color: var(--accent); }
+.restore-row strong { font-size: var(--step-sm); }
+.restore-row small { color: var(--faint); font-size: var(--step-xs); }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

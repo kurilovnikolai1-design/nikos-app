@@ -1,19 +1,20 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-144201";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-144201";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-144201";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-144201";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-144201";
-import * as lock from "../lock.js?v=20260827-144201";
-import * as persist from "../persist.js?v=20260827-144201";
-import * as store from "../store.js?v=20260827-144201";
-import * as records from "../records.js?v=20260827-144201";
-import * as cloud from "../cloud.js?v=20260827-144201";
-import * as notify from "../notify.js?v=20260827-144201";
-import { refreshRates } from "../main-rates.js?v=20260827-144201";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-144201";
-import { whoopRow } from "../whoop.js?v=20260827-144201";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-144534";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-144534";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-144534";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-144534";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-144534";
+import * as lock from "../lock.js?v=20260827-144534";
+import * as persist from "../persist.js?v=20260827-144534";
+import * as store from "../store.js?v=20260827-144534";
+import * as records from "../records.js?v=20260827-144534";
+import * as cloud from "../cloud.js?v=20260827-144534";
+import * as notify from "../notify.js?v=20260827-144534";
+import * as backups from "../backups.js?v=20260827-144534";
+import { refreshRates } from "../main-rates.js?v=20260827-144534";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-144534";
+import { whoopRow } from "../whoop.js?v=20260827-144534";
 
 const ru = () => getLocale() === "ru";
 
@@ -287,9 +288,24 @@ export function settingsView() {
     ]);
     void describeStorage(storageRow);
 
+    /* Automatic copies, listed. A backup nobody can see is a backup nobody
+       trusts, and the moment it is needed is the worst moment to find out
+       whether it exists. */
+    const autoRow = el("div", { class: "setting-row" }, [
+      el("span", { class: "setting-icon", "aria-hidden": "true", text: "⎘" }),
+      el("span", { class: "setting-copy" }, [
+        el("strong", { text: ru() ? "Копии на устройстве" : "Copies on this device" }),
+        el("small", { text: ru() ? "Проверяю…" : "Checking…" })
+      ]),
+      el("span", { class: "setting-control" })
+    ]);
+    void describeBackups(autoRow);
+
     return panel("settings-panel",
       panelHeader(ru() ? "ДАННЫЕ" : "DATA", t("set.backup")),
       el("div", { class: "setting-rows" }, [
+        autoRow,
+
         settingRow("↓", t("set.exportData"),
           settings.lastBackupAt
             ? `${ru() ? "Последняя" : "Last"}: ${formatDate(settings.lastBackupAt, "medium")}`
@@ -326,6 +342,88 @@ export function settingsView() {
                : "Removes every record and file from this device. Cannot be undone.",
           el("button", { class: "small-button danger", type: "button", text: t("set.clearDemo"), onclick: clearAll }))
       ].filter(Boolean)));
+  }
+
+  async function describeBackups(row) {
+    const list = await backups.listBackups();
+    const copy = row.querySelector(".setting-copy small");
+    const control = row.querySelector(".setting-control");
+
+    if (!list.length) {
+      copy.textContent = ru()
+        ? "Пока нет. Первая появится автоматически при следующем открытии."
+        : "None yet. The first is written automatically on a later visit.";
+      return;
+    }
+
+    const newest = await backups.readBackup(list[0].key);
+    copy.textContent = ru()
+      ? `${countOf(list.length, PLURALS.copy)} · последняя ${formatDate(newest?.at?.slice(0, 10) || "", "medium")}, в ней ${countOf(newest?.recordCount ?? 0, PLURALS.record)}`
+      : `${list.length} copies · latest ${formatDate(newest?.at?.slice(0, 10) || "", "medium")}, ${newest?.recordCount ?? "?"} records`;
+
+    control.textContent = "";
+    control.append(el("button", {
+      class: "small-button", type: "button",
+      text: ru() ? "Восстановить" : "Restore",
+      onclick: () => openRestoreDialog(list)
+    }));
+  }
+
+  function openRestoreDialog(list) {
+    const body = el("div", { class: "restore-list" });
+
+    const dialog = openDialog({
+      title: ru() ? "Восстановить из копии" : "Restore from a copy",
+      subtitle: ru() ? "Текущие записи будут заменены" : "Current records will be replaced",
+      size: "form",
+      body,
+      footer: el("p", { class: "panel-note", text: ru() ? backups.BACKUP_NOTE.ru : backups.BACKUP_NOTE.en })
+    });
+
+    void (async () => {
+      for (const item of list) {
+        const stored = await backups.readBackup(item.key);
+        if (!stored) continue;
+        body.append(el("button", {
+          class: "restore-row", type: "button",
+          onclick: () => confirmRestore(stored, dialog)
+        }, [
+          el("strong", { text: formatDate(stored.at.slice(0, 10), "long") }),
+          el("small", { text: ru()
+            ? `${countOf(stored.recordCount, PLURALS.record)} · ${stored.at.slice(11, 16)}`
+            : `${stored.recordCount} records · ${stored.at.slice(11, 16)}` })
+        ]));
+      }
+      if (!body.childElementCount) {
+        body.append(el("p", { class: "panel-note", text: ru() ? "Копии не читаются." : "The copies could not be read." }));
+      }
+    })();
+  }
+
+  async function confirmRestore(stored, dialog) {
+    const now = store.allRecords().length;
+    const confirmed = await confirmDialog({
+      title: ru() ? "Заменить все записи?" : "Replace every record?",
+      message: ru()
+        ? `Сейчас записей: ${now}. В копии: ${stored.recordCount}. Текущие будут заменены целиком.`
+        : `You have ${now} records now; the copy holds ${stored.recordCount}. The current set is replaced entirely.`,
+      detail: formatDate(stored.at.slice(0, 10), "long"),
+      confirmLabel: ru() ? "Восстановить" : "Restore",
+      tone: "danger"
+    });
+    if (!confirmed) return;
+
+    /* A copy of where we are now, before replacing it — restoring the wrong
+       copy must not be the one action with no way back. */
+    await backups.writeBackup(store.exportVault());
+
+    const result = await store.replaceAll(stored.vault);
+    dialog.close();
+    toast(result.ok
+      ? (ru() ? "Восстановлено" : "Restored")
+      : (ru() ? "Не удалось восстановить" : "Could not restore"),
+      { tone: result.ok ? "success" : "danger" });
+    refresh();
   }
 
   /* Real numbers from the browser, and whether it has promised to keep them. */
@@ -700,7 +798,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-144201");
+                       const suite = await import("../selftest.js?v=20260827-144534");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

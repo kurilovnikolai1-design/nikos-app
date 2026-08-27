@@ -1,28 +1,29 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-144201";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-144534";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-144201";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-144201";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-144201";
-import { buildAttention } from "./attention.js?v=20260827-144201";
-import { refresh, recordRow } from "./render.js?v=20260827-144201";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-144201";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-144201";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-144201";
-import * as lock from "./lock.js?v=20260827-144201";
-import * as persist from "./persist.js?v=20260827-144201";
-import * as store from "./store.js?v=20260827-144201";
-import * as records from "./records.js?v=20260827-144201";
-import * as cloud from "./cloud.js?v=20260827-144201";
-import * as notify from "./notify.js?v=20260827-144201";
-import * as attachments from "./attachments.js?v=20260827-144201";
-import * as whoop from "./whoop.js?v=20260827-144201";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-144534";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-144534";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-144534";
+import { buildAttention } from "./attention.js?v=20260827-144534";
+import { refresh, recordRow } from "./render.js?v=20260827-144534";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-144534";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-144534";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-144534";
+import * as lock from "./lock.js?v=20260827-144534";
+import * as persist from "./persist.js?v=20260827-144534";
+import * as store from "./store.js?v=20260827-144534";
+import * as records from "./records.js?v=20260827-144534";
+import * as cloud from "./cloud.js?v=20260827-144534";
+import * as notify from "./notify.js?v=20260827-144534";
+import * as attachments from "./attachments.js?v=20260827-144534";
+import * as backups from "./backups.js?v=20260827-144534";
+import * as whoop from "./whoop.js?v=20260827-144534";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-144201";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-144201";
-import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-144201";
-import { settingsView } from "./views/settings.js?v=20260827-144201";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-144534";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-144534";
+import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-144534";
+import { settingsView } from "./views/settings.js?v=20260827-144534";
 
 const ru = () => getLocale() === "ru";
 
@@ -466,6 +467,17 @@ async function boot() {
       : `Storage is ${used.percent}% full. Free some space or remove large attachments, or new records will stop saving.`,
       { tone: "danger", duration: 12000 });
   });
+
+  /* A weekly copy on this device. Undo covers the mistake noticed at once;
+     this covers the one noticed a week later, when the bad state has already
+     been synced everywhere. Run late so it never competes with first paint. */
+  setTimeout(() => {
+    const settings = store.getSettings();
+    if (!backups.isDue(settings.lastBackupAt)) return;
+    void backups.writeBackup(store.exportVault()).then(async (done) => {
+      if (done.ok) await store.updateSettings({ lastBackupAt: new Date().toISOString() });
+    });
+  }, 12_000);
 
   /* Deleting a record leaves its file behind. On a phone that accumulates
      silently, and the storage grant these records depend on is finite — so
