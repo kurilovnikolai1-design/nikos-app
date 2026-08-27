@@ -137,6 +137,16 @@ h1, h2, h3, p { margin: 0; }
 .boot-error { max-width: 520px; margin: 18vh auto; padding: 28px; text-align: center; }
 .boot-error h1 { font-size: 24px; margin-bottom: 10px; }
 .boot-error p { color: var(--muted); }
+.boot-error-detail {
+  font-family: var(--mono, ui-monospace, monospace); font-size: var(--step-xs);
+  color: var(--faint); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 14px;
+  overflow-wrap: anywhere; text-align: left;
+}
+.boot-error-actions {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px;
+}
+.boot-error-note { font-size: var(--step-xs); color: var(--faint); margin-top: 14px; }
 
 /* ---------------------------------------------------------------- shell */
 
@@ -905,6 +915,27 @@ button.metric-card:hover { border-color: var(--border-strong); }
 }
 .attachment-row small { color: var(--faint); font-size: var(--step-xs); }
 .text-button.danger { color: var(--danger, #d9534f); }
+
+/* What a pasted report was understood to say — shown before anything is saved,
+   because an extraction the owner cannot check is worse than none. */
+.procedure-summary { display: grid; gap: 8px; margin-top: 14px; }
+.procedure-line {
+  display: grid; grid-template-columns: minmax(96px, 26%) 1fr; gap: 4px 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.procedure-line.missing { border-style: dashed; }
+.procedure-label {
+  font-size: var(--step-xs); color: var(--faint);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.procedure-value { font-size: var(--step-sm); overflow-wrap: anywhere; display: grid; gap: 3px; }
+.procedure-line.missing .procedure-value { color: var(--faint); }
+.procedure-value em { font-style: normal; color: var(--faint); font-size: var(--step-xs); }
+
+@media (max-width: 520px) {
+  .procedure-line { grid-template-columns: 1fr; }
+}
 
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;

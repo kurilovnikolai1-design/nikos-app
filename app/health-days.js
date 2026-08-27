@@ -9,7 +9,7 @@
    So measurements are folded into one card per day, the way a wearable does it,
    and the raw records stay reachable underneath for anyone who wants them. */
 
-import { isLive } from "./schema.js?v=20260827-122205";
+import { isLive } from "./schema.js?v=20260827-130123";
 
 /* The metrics that describe a day, in the order they are worth reading. */
 export const DAY_METRICS = [

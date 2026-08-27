@@ -2,20 +2,21 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-122205";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-122205";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-122205";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-122205";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-122205";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-122205";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-122205";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-122205";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-122205";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-122205";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-122205";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-122205";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-122205";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-122205";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-130123";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-130123";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-130123";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-130123";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-130123";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-130123";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-130123";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-130123";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-130123";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-130123";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-130123";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-130123";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-130123";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-130123";
+import { parseReport } from "./procedures.js?v=20260827-130123";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -273,11 +274,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-122205")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-130123")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-122205")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-130123")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -286,14 +287,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-122205")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-130123")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-122205")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-130123")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -325,6 +326,29 @@ check("запись без даты не беспокоит", !due.some((item) =
 check("самое просроченное — первым", due[0]?.days <= due.at(-1)?.days);
 check("текст напоминания называет запись",
       describeReminder(due.find((item) => item.record.id === "n1"), "ru").body.includes("Ипотека"));
+
+/* ---------- Procedure reports ---------- */
+
+/* The rule: everything reported is a quotation. A report that says nothing
+   about coming back must not produce a follow-up date. */
+const colonoscopy = parseReport(
+  "Дата: 14.05.2026\nВидеоколоноскопия\nЗаключение: Полип сигмовидной кишки.\n" +
+  "Рекомендации: контрольная колоноскопия через 3 года.");
+check("дата выписки прочитана", colonoscopy.date === "2026-05-14");
+check("вид исследования опознан", colonoscopy.kind === "Колоноскопия");
+check("заключение взято дословно", colonoscopy.conclusion === "Полип сигмовидной кишки.");
+check("срок контроля посчитан от даты", colonoscopy.followUp?.date === "2029-05-14");
+check("контроль подкреплён цитатой", colonoscopy.followUp?.quote.includes("через 3 года"));
+check("текст выписки сохранён целиком", colonoscopy.fullText.includes("Видеоколоноскопия"));
+
+const quiet = parseReport("УЗИ брюшной полости 03.04.2026\nЗаключение: Диффузные изменения печени.");
+check("без рекомендации — без срока", quiet.followUp === null,
+      "срок контроля нельзя выводить из находок");
+check("заключение всё равно прочитано", quiet.conclusion === "Диффузные изменения печени.");
+
+const noise = parseReport("просто какой-то текст");
+check("из мусора ничего не выдумывается",
+      noise.kind === null && noise.conclusion === null && noise.followUp === null);
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

@@ -9,12 +9,14 @@
    Parsing runs entirely in the browser. The text of a medical report is never
    uploaded, which is the whole reason this is a paste box and not a service. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-122205";
-import { t, getLocale, formatDate, categoryLabel } from "./i18n.js?v=20260827-122205";
-import { categoriesOf } from "./schema.js?v=20260827-122205";
-import { parseLabText, guessDate, guessLab, rangeVerdict, labPanels, analyteHistory, byAnalyte, currentlyOutOfRange } from "./labs-parse.js?v=20260827-122205";
-import * as store from "./store.js?v=20260827-122205";
-import * as records from "./records.js?v=20260827-122205";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-130123";
+import { t, getLocale, formatDate, categoryLabel } from "./i18n.js?v=20260827-130123";
+import { categoriesOf } from "./schema.js?v=20260827-130123";
+import { parseLabText, guessDate, guessLab, rangeVerdict, labPanels, analyteHistory, byAnalyte, currentlyOutOfRange } from "./labs-parse.js?v=20260827-130123";
+import * as store from "./store.js?v=20260827-130123";
+import * as records from "./records.js?v=20260827-130123";
+import { parseReport, toRecord, PROCEDURE_NOTE } from "./procedures.js?v=20260827-130123";
+import { openRecordForm } from "./form.js?v=20260827-130123";
 
 const ru = () => getLocale() === "ru";
 
@@ -161,3 +163,80 @@ export const verdictLabel = (verdict) =>
 
 
 
+
+/* ---------- Procedure reports ---------- */
+
+/* A colonoscopy or gastroscopy report is prose, not a table, so it gets its
+   own box. The dialog shows exactly what was recognised and what was not —
+   an extraction the owner cannot check is worse than no extraction. */
+export function openProcedurePaste({ onDone = null } = {}) {
+  let parsed = null;
+
+  const input = el("textarea", {
+    class: "form-control lab-paste", rows: "9", "data-autofocus": "true",
+    placeholder: ru()
+      ? "Вставьте текст выписки целиком — из PDF, из личного кабинета, из письма.\n\nДата исследования: 14.05.2026\nВидеоколоноскопия\n…\nЗаключение: …\nРекомендации: контрольная колоноскопия через 3 года."
+      : "Paste the whole report — from a PDF, a portal, an email.",
+    oninput: () => analyse()
+  });
+
+  const summary = el("div", { class: "procedure-summary" });
+
+  const dialog = openDialog({
+    title: ru() ? "Вставить выписку" : "Paste a report",
+    subtitle: ru() ? "Колоноскопия, ЭГДС, УЗИ, МРТ" : "Colonoscopy, gastroscopy, ultrasound, MRI",
+    size: "form",
+    body: el("div", { class: "lab-paste-body" }, [
+      input,
+      summary,
+      el("p", { class: "panel-note", text: ru() ? PROCEDURE_NOTE.ru : PROCEDURE_NOTE.en })
+    ]),
+    footer: el("div", { class: "dialog-actions" }, [
+      el("button", { class: "ghost-button", type: "button", text: t("app.cancel"), onclick: () => dialog.close() }),
+      el("button", { class: "primary-button", type: "button",
+                     text: ru() ? "Разобрать и открыть" : "Parse and open", onclick: proceed })
+    ])
+  });
+
+  analyse();
+  return dialog;
+
+  function analyse() {
+    parsed = parseReport(input.value, getLocale());
+    summary.textContent = "";
+    if (!parsed) return;
+
+    const line = (label, value, ok) => el("div", { class: `procedure-line${ok ? "" : " missing"}` }, [
+      el("span", { class: "procedure-label", text: label }),
+      el("span", { class: "procedure-value", text: value })
+    ]);
+
+    const unknown = ru() ? "не нашёл — впишете сами" : "not found — fill it in";
+
+    summary.append(
+      line(ru() ? "Исследование" : "Examination", parsed.kind || unknown, Boolean(parsed.kind)),
+      line(ru() ? "Дата" : "Date",
+           parsed.date ? formatDate(parsed.date, "long") : unknown, Boolean(parsed.date)),
+      line(ru() ? "Заключение" : "Conclusion", parsed.conclusion || unknown, Boolean(parsed.conclusion))
+    );
+
+    if (parsed.followUp) {
+      summary.append(el("div", { class: "procedure-line" }, [
+        el("span", { class: "procedure-label", text: ru() ? "Контроль" : "Follow-up" }),
+        el("span", { class: "procedure-value" }, [
+          el("b", { text: formatDate(parsed.followUp.date, "long") }),
+          el("em", { text: `«${parsed.followUp.quote}»` })
+        ])
+      ]));
+    }
+  }
+
+  /* Opens the ordinary record form, prefilled. Nothing is saved behind the
+     owner's back: he sees every field the report produced before it lands. */
+  function proceed() {
+    if (!parsed) { toast(ru() ? "Вставьте текст выписки" : "Paste the report first", { tone: "warn" }); return; }
+    const draft = toRecord(parsed, getLocale());
+    dialog.close();
+    openRecordForm("health", null, { presets: draft, onSaved: () => onDone?.() });
+  }
+}
