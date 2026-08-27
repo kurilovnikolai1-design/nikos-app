@@ -2,14 +2,14 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-091102";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-091102";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-091102";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-091102";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-091102";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-091102";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-091102";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-091102";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-092919";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-092919";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-092919";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-092919";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-092919";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-092919";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-092919";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-092919";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */

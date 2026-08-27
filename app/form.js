@@ -6,13 +6,14 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-091102";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-091102";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-091102";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-091102";
-import { COINS } from "./rates.js?v=20260827-091102";
-import * as store from "./store.js?v=20260827-091102";
-import * as records from "./records.js?v=20260827-091102";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-092919";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-092919";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-092919";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-092919";
+import { COINS } from "./rates.js?v=20260827-092919";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-092919";
+import * as store from "./store.js?v=20260827-092919";
+import * as records from "./records.js?v=20260827-092919";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -43,6 +44,16 @@ const PLACEHOLDER = {
 };
 
 const pick = (pair) => (getLocale() === "ru" ? pair[0] : pair[1]);
+
+/* Label and placeholder for a field on this particular type, falling back to
+   the generic wording when the type has nothing special to say. */
+const copyFor = (field, type, fallbackKey, fallbackPlaceholder = "") => {
+  const specific = fieldCopy(field, type, getLocale());
+  return {
+    label: specific?.label || t(fallbackKey),
+    placeholder: specific?.placeholder || fallbackPlaceholder
+  };
+};
 
 function field(labelText, control, { hint = "", error = "", wide = false } = {}) {
   return el("label", { class: `form-field ${wide ? "wide" : ""} ${error ? "has-error" : ""}`.trim() }, [
@@ -120,7 +131,8 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
 
     switch (name) {
       case "name": {
-        const placeholder = pick(PLACEHOLDER.name[type] || PLACEHOLDER.name.default);
+        const placeholder = namePlaceholder(type, draft.category, getLocale())
+          || pick(PLACEHOLDER.name[type] || PLACEHOLDER.name.default);
         return field(t("form.name"), el("input", {
           class: "form-control", type: "text", value: draft.name || "", placeholder, maxlength: "200",
           oninput: (event) => set("name", event.target.value)
@@ -129,14 +141,21 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
 
       case "category":
         return field(t("form.category"), el("select", {
-          class: "form-control", onchange: (event) => { set("category", event.target.value); if (type === "measurement") render(); }
+          class: "form-control",
+          onchange: (event) => {
+            set("category", event.target.value);
+            // The name suggestion follows the category, so redraw when it changes.
+            if (type === "measurement" || namePlaceholder(type, event.target.value, getLocale())) render();
+          }
         }, categoriesOf(type).map((item) => option(item.key, categoryLabel(type, item.key), item.key === draft.category))), { error });
 
-      case "counterparty":
-        return field(type === "lab" ? t("form.lab") : t("form.counterparty"), el("input", {
-          class: "form-control", type: "text", value: draft.counterparty || "", placeholder: pick(PLACEHOLDER.counterparty),
+      case "counterparty": {
+        const copy = copyFor("counterparty", type, "form.counterparty", pick(PLACEHOLDER.counterparty));
+        return field(copy.label, el("input", {
+          class: "form-control", type: "text", value: draft.counterparty || "", placeholder: copy.placeholder,
           oninput: (event) => set("counterparty", event.target.value)
         }), { error });
+      }
 
       case "contact":
         return field(t("form.contact"), el("input", {
@@ -144,11 +163,18 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
           oninput: (event) => set("contact", event.target.value)
         }), { error });
 
-      case "amount":
-        return amountField("amountMinor", def.amountLabel ? pick([def.amountLabel.ru, def.amountLabel.en]) : t("form.amount"), error);
+      case "amount": {
+        const copy = copyFor("amount", type, "form.amount");
+        return amountField("amountMinor",
+          copy.label !== t("form.amount") ? copy.label
+            : def.amountLabel ? pick([def.amountLabel.ru, def.amountLabel.en]) : t("form.amount"),
+          error, copy.placeholder);
+      }
 
-      case "costBasis":
-        return amountField("costBasisMinor", t("form.costBasis"), "");
+      case "costBasis": {
+        const copy = copyFor("costBasis", type, "form.costBasis");
+        return amountField("costBasisMinor", copy.label, "", copy.placeholder);
+      }
 
       case "currency":
         return field(t("form.currency"), el("select", {
@@ -223,7 +249,7 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         return field(t("form.rate"), numberInput("rate", { min: 0, max: 200, step: 0.01 }), {});
 
       case "date":
-        return dateField("date", t("form.date"), error);
+        return dateField("date", copyFor("date", type, "form.date").label, error);
       case "dueDate":
         return dateField("dueDate", t("form.dueDate"), "");
       case "endDate":
@@ -231,7 +257,7 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
       case "expiresAt":
         return dateField("expiresAt", t("form.expiresAt"), "");
       case "reminderDate":
-        return dateField("reminderDate", t("form.reminderDate"), "");
+        return dateField("reminderDate", copyFor("reminderDate", type, "form.reminderDate").label, "");
 
       case "dueTime":
         return field(t("form.dueTime"), el("input", {
@@ -240,7 +266,7 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         }), {});
 
       case "status":
-        return field(t("form.status"), el("select", {
+        return field(copyFor("status", type, "form.status").label, el("select", {
           class: "form-control", onchange: (event) => set("status", event.target.value)
         }, statusesOf(type).map((key) => option(key, statusLabel(key), key === draft.status))), {
           hint: statusHint()
@@ -250,22 +276,27 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         return field(t("form.priority"), selectFrom(PRIORITY, draft.priority, priorityLabel, (value) => set("priority", value)), {});
 
       case "owner":
-        return field(t("form.owner"), selectFrom(OWNER, draft.owner, ownerLabel, (value) => set("owner", value)), {});
+        return field(copyFor("owner", type, "form.owner").label,
+          selectFrom(OWNER, draft.owner, ownerLabel, (value) => set("owner", value)), {});
 
       case "confidence":
         return field(t("form.confidence"), selectFrom(CONFIDENCE, draft.confidence, confidenceLabel, (value) => set("confidence", value)), {});
 
-      case "terms":
-        return field(t("form.terms"), el("input", {
-          class: "form-control", type: "text", value: draft.terms || "", placeholder: pick(PLACEHOLDER.terms),
+      case "terms": {
+        const copy = copyFor("terms", type, "form.terms", pick(PLACEHOLDER.terms));
+        return field(copy.label, el("input", {
+          class: "form-control", type: "text", value: draft.terms || "", placeholder: copy.placeholder,
           oninput: (event) => set("terms", event.target.value)
         }), {});
+      }
 
-      case "source":
-        return field(t("form.source"), el("input", {
-          class: "form-control", type: "text", value: draft.source || "", placeholder: pick(PLACEHOLDER.source),
+      case "source": {
+        const copy = copyFor("source", type, "form.source", pick(PLACEHOLDER.source));
+        return field(copy.label, el("input", {
+          class: "form-control", type: "text", value: draft.source || "", placeholder: copy.placeholder,
           oninput: (event) => set("source", event.target.value)
         }), {});
+      }
 
       case "linked":
         return linkedField();
@@ -282,11 +313,13 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
           oninput: (event) => set("reasoning", event.target.value)
         }), { wide: true });
 
-      case "details":
-        return field(t("form.details"), el("textarea", {
-          class: "form-control", rows: "3", placeholder: pick(PLACEHOLDER.details),
+      case "details": {
+        const copy = copyFor("details", type, "form.details", pick(PLACEHOLDER.details));
+        return field(copy.label, el("textarea", {
+          class: "form-control", rows: "3", placeholder: copy.placeholder,
           oninput: (event) => set("details", event.target.value)
         }, [draft.details || ""]), { wide: true });
+      }
 
       default:
         return null;
@@ -311,10 +344,10 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
 
   /* Amounts accept "1 500", "1,5к" and "2м" and are stored as integer minor
      units, so no total ever drifts by a rounding error. */
-  function amountField(key, labelText, error) {
+  function amountField(key, labelText, error, hintText = "") {
     const initial = draft[key] === null || draft[key] === undefined
       ? "" : String(toMajor(draft[key], draft.currency || "RUB"));
-    const preview = el("small", { class: "form-hint", text: t("form.amountHint") });
+    const preview = el("small", { class: "form-hint", text: hintText || t("form.amountHint") });
 
     const input = el("input", {
       class: "form-control", type: "text", inputmode: "decimal", value: initial,
@@ -324,7 +357,7 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         set(key, parsed);
         preview.textContent = event.target.value.trim() && parsed === null
           ? (getLocale() === "ru" ? "Не похоже на число" : "That is not a number")
-          : t("form.amountHint");
+          : (hintText || t("form.amountHint"));
       }
     });
 

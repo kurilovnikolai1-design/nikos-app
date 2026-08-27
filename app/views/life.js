@@ -1,21 +1,22 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-091102";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-092919";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-091102";
-import { formatMoney } from "../money.js?v=20260827-091102";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-091102";
-import { categoriesOf } from "../schema.js?v=20260827-091102";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-091102";
-import { openRecordForm } from "../form.js?v=20260827-091102";
-import { navigate } from "../router.js?v=20260827-091102";
-import { importCsv } from "../csv.js?v=20260827-091102";
-import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-091102";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-091102";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-091102";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-091102";
-import * as store from "../store.js?v=20260827-091102";
-import * as records from "../records.js?v=20260827-091102";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-092919";
+import { formatMoney } from "../money.js?v=20260827-092919";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-092919";
+import { categoriesOf } from "../schema.js?v=20260827-092919";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-092919";
+import { openRecordForm } from "../form.js?v=20260827-092919";
+import { navigate } from "../router.js?v=20260827-092919";
+import { importCsv } from "../csv.js?v=20260827-092919";
+import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-092919";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-092919";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-092919";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-092919";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-092919";
+import * as store from "../store.js?v=20260827-092919";
+import * as records from "../records.js?v=20260827-092919";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -375,6 +376,24 @@ export function labsView() {
 
     const host = document.createDocumentFragment();
 
+    const observations = labInsights(all, { locale: getLocale() });
+    if (observations.length) {
+      host.append(panel("insight-panel",
+        panelHeader(ru() ? "ЧТО ВИДНО В ЦИФРАХ" : "WHAT THE NUMBERS SHOW",
+          ru() ? "Наблюдения, а не толкование" : "Observations, not interpretation"),
+        el("div", { class: "insight-list" }, observations.map((item) =>
+          el("div", { class: `insight tone-${item.tone}` }, [
+            el("span", { class: "insight-mark", "aria-hidden": "true",
+                         text: item.tone === "warn" ? "!" : item.tone === "good" ? "↗" : "·" }),
+            el("span", {}, [
+              el("strong", { text: item.title }),
+              el("p", { text: item.text }),
+              el("small", { text: item.sample })
+            ])
+          ]))),
+        el("p", { class: "panel-note", text: ru() ? LAB_DISCLAIMER.ru : LAB_DISCLAIMER.en })));
+    }
+
     host.append(el("div", { class: "metric-grid" }, [
       metricCard({ kicker: ru() ? "ПОКАЗАТЕЛЕЙ" : "ANALYTES", value: String(groups.length),
                    note: ru()
@@ -452,7 +471,7 @@ export function labsView() {
   /* One line per analyte: where it stands now, and where it has been. */
   function analyteRow(group) {
     const off = ["above", "below"].includes(group.verdict);
-    const unit = group.latest.unit ? ` ${group.latest.unit}` : "";
+    const unit = group.unit ? ` ${group.unit}` : "";
     const range = rangeText(group.latest);
 
     return el("button", {

@@ -211,13 +211,35 @@ export function byAnalyte(all) {
   const result = [];
   for (const group of groups.values()) {
     group.history.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    /* A laboratory sometimes omits the unit on a single reading — KDL prints
+       basophils as "0.00" with no unit while every other visit says 10*9/л.
+       Taken literally that reads as a unit change and splits the chart in two,
+       which is what it looked like: something wrong with the latest value. A
+       missing unit inherits the one this analyte otherwise uses. */
+    /* A laboratory table sometimes leaks a dash or a stray number into the
+       unit column. Something made only of punctuation and digits is not a
+       unit, and treating it as one produced values like "3,8 -". */
+    const looksLikeUnit = (text) => /[A-Za-zА-Яа-яЁё%‰°]/.test(text);
+
+    const tally = new Map();
+    for (const item of group.history) {
+      const unit = (item.unit || "").trim();
+      if (unit && looksLikeUnit(unit)) tally.set(unit, (tally.get(unit) ?? 0) + 1);
+    }
+    const dominant = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+    const unitOf = (item) => {
+      const unit = (item.unit || "").trim();
+      return unit && looksLikeUnit(unit) ? unit : dominant;
+    };
+
     const latest = group.history.at(-1);
     const previous = group.history.length > 1 ? group.history.at(-2) : null;
 
-    /* Units change over the years — KDL itself draws a separate chart when
-       they do. A trend line is only drawn across readings that share a unit. */
-    const units = [...new Set(group.history.map((item) => item.unit || "").filter(Boolean))];
-    const comparable = group.history.filter((item) => (item.unit || "") === (latest.unit || ""));
+    /* Units really do change over the years — the same test reported in МЕ/л
+       and later in Ед/л. A trend line only spans readings that share one. */
+    const units = [...tally.keys()];
+    const comparable = group.history.filter((item) => unitOf(item) === unitOf(latest));
 
     result.push({
       ...group,
@@ -225,10 +247,12 @@ export function byAnalyte(all) {
       previous,
       verdict: rangeVerdict(latest),
       units,
+      unit: unitOf(latest),
+      unitOf,
       unitChanged: units.length > 1,
       comparable,
       count: group.history.length,
-      delta: previous && (previous.unit || "") === (latest.unit || "")
+      delta: previous && unitOf(previous) === unitOf(latest)
         ? Number(latest.value) - Number(previous.value)
         : null
     });
