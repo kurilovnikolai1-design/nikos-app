@@ -1,7 +1,8 @@
 # Nik'Os
 
-Installable web application for phone and desktop.
+Устанавливаемое веб-приложение для телефона и компьютера.
 
-This repository contains only the static application shell. Personal records, account credentials, Supabase configuration, and private project documentation are not stored here.
+В этом репозитории лежит только оболочка приложения. Личные записи, пароли,
+настройки Supabase и внутренняя документация здесь не хранятся.
 
-Production URL: https://kurilovnikolai1-design.github.io/nikos-app/
+Адрес: https://kurilovnikolai1-design.github.io/nikos-app/
