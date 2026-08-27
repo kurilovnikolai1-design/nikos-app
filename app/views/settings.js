@@ -1,18 +1,18 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-062702";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-062702";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-062702";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-062702";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-062702";
-import * as lock from "../lock.js?v=20260827-062702";
-import * as persist from "../persist.js?v=20260827-062702";
-import * as store from "../store.js?v=20260827-062702";
-import * as records from "../records.js?v=20260827-062702";
-import * as cloud from "../cloud.js?v=20260827-062702";
-import { refreshRates } from "../main-rates.js?v=20260827-062702";
-import { loadDemoData } from "../demo.js?v=20260827-062702";
-import { whoopRow } from "../whoop.js?v=20260827-062702";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-064144";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-064144";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-064144";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-064144";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-064144";
+import * as lock from "../lock.js?v=20260827-064144";
+import * as persist from "../persist.js?v=20260827-064144";
+import * as store from "../store.js?v=20260827-064144";
+import * as records from "../records.js?v=20260827-064144";
+import * as cloud from "../cloud.js?v=20260827-064144";
+import { refreshRates } from "../main-rates.js?v=20260827-064144";
+import { loadDemoData } from "../demo.js?v=20260827-064144";
+import { whoopRow } from "../whoop.js?v=20260827-064144";
 
 const ru = () => getLocale() === "ru";
 
@@ -488,7 +488,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-062702");
+                       const suite = await import("../selftest.js?v=20260827-064144");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

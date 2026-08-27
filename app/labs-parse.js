@@ -156,3 +156,39 @@ export function rangeVerdict(record) {
   if (low !== null && value < low) return "below";
   return "in";
 }
+
+/* ---------- Grouping for the health screen ---------- */
+
+/* Results arrive as a panel taken on one day, so they are read that way:
+   grouped by sample date, newest first, with the out-of-range ones called out. */
+export function labPanels(all) {
+  const labs = all.filter((record) => record.type === "lab");
+  const byDate = new Map();
+
+  for (const record of labs) {
+    const key = record.date || "—";
+    if (!byDate.has(key)) byDate.set(key, []);
+    byDate.get(key).push(record);
+  }
+
+  return [...byDate.entries()]
+    .sort((a, b) => String(b[0]).localeCompare(String(a[0])))
+    .map(([date, items]) => ({
+      date,
+      items: items.sort((a, b) => String(a.name).localeCompare(String(b.name), "ru")),
+      lab: items.find((item) => item.counterparty)?.counterparty || "",
+      outOfRange: items.filter((item) => ["above", "below"].includes(rangeVerdict(item)))
+    }));
+}
+
+/* History of one analyte, so a value can be read as a trend rather than a dot. */
+export function analyteHistory(all, name) {
+  const key = String(name).toLowerCase().trim();
+  return all
+    .filter((record) => record.type === "lab"
+      && String(record.name).toLowerCase().trim() === key
+      && Number.isFinite(Number(record.value))
+      && record.date)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+    .map((record) => ({ date: record.date, value: Number(record.value), record }));
+}

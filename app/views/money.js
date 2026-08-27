@@ -1,16 +1,16 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog } from "../ui.js?v=20260827-062702";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog } from "../ui.js?v=20260827-064144";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-062702";
-import { formatMoney, formatQuantity, CURRENCIES } from "../money.js?v=20260827-062702";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-062702";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-062702";
-import { isVerified } from "../schema.js?v=20260827-062702";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-062702";
-import { openRecordForm } from "../form.js?v=20260827-062702";
-import * as store from "../store.js?v=20260827-062702";
-import * as records from "../records.js?v=20260827-062702";
+         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-064144";
+import { formatMoney, formatQuantity, CURRENCIES } from "../money.js?v=20260827-064144";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-064144";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-064144";
+import { isVerified } from "../schema.js?v=20260827-064144";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-064144";
+import { openRecordForm } from "../form.js?v=20260827-064144";
+import * as store from "../store.js?v=20260827-064144";
+import * as records from "../records.js?v=20260827-064144";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
