@@ -1,13 +1,24 @@
 /* Offline shell.
 
-   The previous worker pre-cached "styles.css?v=20260827-recurring-expenses-3"
-   while the page requested "styles.css?v=20260827-full-audit-2". The strings
-   never matched, so the pre-cache was dead weight and a first offline launch
-   could come up unstyled. Versions live in one constant now, and the query
-   string is ignored when matching, so a stale suffix cannot cause a miss. */
+   Two lessons are baked in here.
 
-const VERSION = "2026-08-27-v3";
-const CACHE = `nikos-shell-${VERSION}`;
+   The old worker pre-cached "styles.css?v=…-3" while the page requested
+   "styles.css?v=…-2": the strings never matched, so the pre-cache was dead
+   weight and a first offline launch could come up unstyled.
+
+   Then this build repeated the mistake in a subtler form. Only app/main.js
+   carried a version in the markup; the twenty modules it imports did not. A
+   cache-first worker therefore kept serving yesterday's view code, and a
+   deployed fix simply did not arrive — the calendar looked updated on the
+   server while the browser still ran the previous module.
+
+   So app code is now network-first with revalidation, and falls back to the
+   cache only when the network cannot answer. Freshness is guaranteed while
+   online; offline still works because every response is cached on the way
+   through. BUILD is stamped at publish time, which also purges old caches. */
+
+const BUILD = "20260827-053533";
+const CACHE = `nikos-shell-${BUILD}`;
 
 const APP_SHELL = [
   "./",
@@ -44,8 +55,12 @@ const APP_SHELL = [
 self.addEventListener("install", (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    // One missing file must not abandon the whole pre-cache.
-    await Promise.all(APP_SHELL.map((url) => cache.add(url).catch(() => null)));
+    // One missing file must not abandon the whole pre-cache. Bypass the HTTP
+    // cache so a fresh install never seeds itself with stale copies.
+    await Promise.all(APP_SHELL.map((url) =>
+      fetch(new Request(url, { cache: "reload" }))
+        .then((response) => (response.ok ? cache.put(url, response) : null))
+        .catch(() => null)));
     await self.skipWaiting();
   })());
 });
@@ -55,49 +70,39 @@ self.addEventListener("activate", (event) => {
     const keys = await caches.keys();
     await Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)));
     await self.clients.claim();
+    // Tell any open tab that newer code is in charge, so it can reload itself
+    // instead of running half of one version and half of the next.
+    const clients = await self.clients.matchAll({ type: "window" });
+    for (const client of clients) client.postMessage({ type: "nikos-updated", build: BUILD });
   })());
 });
 
-const isSameOrigin = (url) => url.origin === self.location.origin;
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "nikos-skip-waiting") self.skipWaiting();
+});
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
-  if (!isSameOrigin(url)) return;                 // rate feeds and Supabase go straight to the network
-
-  if (request.mode === "navigate") {
-    // Network first, so a deploy is picked up immediately; cache is the fallback.
-    event.respondWith((async () => {
-      try {
-        const response = await fetch(request);
-        const cache = await caches.open(CACHE);
-        cache.put("./index.html", response.clone());
-        return response;
-      } catch {
-        return (await caches.match("./index.html")) || Response.error();
-      }
-    })());
-    return;
-  }
+  if (url.origin !== self.location.origin) return;   // rate feeds and Supabase go straight to the network
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    // ignoreSearch means "?v=3" cannot turn a present asset into a miss.
-    const cached = await cache.match(request, { ignoreSearch: true });
 
-    const network = fetch(request).then((response) => {
-      if (response.ok && response.type === "basic") cache.put(request, response.clone());
+    try {
+      // "no-cache" revalidates with the server instead of trusting the
+      // ten-minute max-age GitHub Pages sends, so a deploy lands immediately.
+      const response = await fetch(new Request(request, { cache: "no-cache" }));
+      if (response.ok && response.type === "basic") {
+        cache.put(request.mode === "navigate" ? "./index.html" : request, response.clone());
+      }
       return response;
-    }).catch(() => null);
-
-    if (cached) {
-      // Refresh in the background without leaving an unhandled rejection offline.
-      event.waitUntil(network);
-      return cached;
+    } catch {
+      const cached = await cache.match(request, { ignoreSearch: true })
+        || (request.mode === "navigate" ? await cache.match("./index.html") : null);
+      return cached || Response.error();
     }
-
-    return (await network) || Response.error();
   })());
 });

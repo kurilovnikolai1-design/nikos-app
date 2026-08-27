@@ -433,7 +433,26 @@ async function boot() {
    app was never actually available offline. */
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator) || !["http:", "https:"].includes(location.protocol)) return;
-  const run = () => navigator.serviceWorker.register("./sw.js").catch(() => { /* the offline shell is optional */ });
+
+  /* When a newer worker activates, the page may be running a mix of old and
+     new modules. Reload once — guarded, so a worker that keeps re-activating
+     can never put the app in a reload loop. */
+  let reloading = false;
+  const reloadOnce = () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  };
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "nikos-updated") reloadOnce();
+  });
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (navigator.serviceWorker.controller) reloadOnce();
+  });
+
+  const run = () => navigator.serviceWorker.register("./sw.js")
+    .then((registration) => { registration.update?.(); })
+    .catch(() => { /* the offline shell is optional */ });
   if (document.readyState === "complete") run();
   else window.addEventListener("load", run, { once: true });
 }
