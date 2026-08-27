@@ -1,25 +1,26 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-104630";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-115943";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-104630";
-import { formatMoney } from "../money.js?v=20260827-104630";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-104630";
-import { categoriesOf } from "../schema.js?v=20260827-104630";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-104630";
-import { openRecordForm } from "../form.js?v=20260827-104630";
-import { navigate } from "../router.js?v=20260827-104630";
-import { importCsv } from "../csv.js?v=20260827-104630";
-import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-104630";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-104630";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-104630";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-104630";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-104630";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-104630";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-104630";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-104630";
-import * as store from "../store.js?v=20260827-104630";
-import * as records from "../records.js?v=20260827-104630";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-115943";
+import { formatMoney } from "../money.js?v=20260827-115943";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-115943";
+import { categoriesOf } from "../schema.js?v=20260827-115943";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-115943";
+import { openRecordForm } from "../form.js?v=20260827-115943";
+import { navigate } from "../router.js?v=20260827-115943";
+import { importCsv } from "../csv.js?v=20260827-115943";
+import { openLabPaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-115943";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-115943";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-115943";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-115943";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-115943";
+import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-115943";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-115943";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-115943";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-115943";
+import * as store from "../store.js?v=20260827-115943";
+import * as records from "../records.js?v=20260827-115943";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -383,7 +384,9 @@ export function labsView() {
 
     /* Nine deviations read as nine problems. Grouped by who reads them they
        read as three appointments, which is what they actually are. */
-    const off = groups.filter((group) => ["above", "below"].includes(group.verdict));
+    const flagged = groups.filter((group) => ["above", "below"].includes(group.verdict));
+    const { active: off, resolved } = partitionByResolution(flagged, all);
+
     if (off.length) {
       const buckets = groupBySpecialist(off, getLocale());
       host.append(panel("records-panel routing-panel",
@@ -402,6 +405,28 @@ export function labsView() {
           })))
         ]))),
         el("p", { class: "panel-note", text: ru() ? ROUTING_NOTE.ru : ROUTING_NOTE.en })));
+    }
+
+    /* Dealt with, and still visible. Hiding a treated finding entirely would
+       make it impossible to notice that nothing ever confirmed the treatment. */
+    if (resolved.length) {
+      host.append(panel("records-panel resolved-panel",
+        panelHeader(ru() ? "УЖЕ РАЗОБРАЛИСЬ" : "ALREADY DEALT WITH",
+          ru() ? "Отмечено вами как пролеченное" : "Marked by you as treated",
+          el("span", { class: "security-badge", text: String(resolved.length) })),
+        el("div", { class: "routing-list" }, resolved.map(({ group, state }) => el("button", {
+          class: `resolved-row${state.unconfirmed ? " unconfirmed" : ""}`, type: "button",
+          onclick: () => openAnalyte(group)
+        }, [
+          el("span", { class: "resolved-name", text: group.name }),
+          el("small", { text: ru()
+            ? `отмечено ${formatDate(state.date, "medium")}`
+            : `marked ${formatDate(state.date, "medium")}` }),
+          state.confirmed
+            ? el("em", { class: "good", text: ru() ? "пересдано, в норме" : "retested, in range" })
+            : el("em", { text: ru() ? "после этого не пересдавали" : "not retested since" })
+        ]))),
+        el("p", { class: "panel-note", text: ru() ? RESOLVED_NOTE.ru : RESOLVED_NOTE.en })));
     }
 
     const observations = labInsights(all, { locale: getLocale() });
@@ -590,6 +615,7 @@ export function labsView() {
 
   /* The laboratory's own detail view: the whole history as a chart and a list. */
   function openAnalyte(group) {
+    let dialog = null;
     const body = el("div", { class: "analyte-detail" });
     const latest = group.latest;
 
@@ -620,6 +646,31 @@ export function labsView() {
         el("span", { class: "panel-kicker", text: ru() ? "ОБЫЧНО СМОТРИТ" : "USUALLY READ BY" }),
         el("strong", { text: route.specialist }),
         el("small", { text: route.system })
+      ]));
+    }
+
+    /* Already dealt with? The state, and the way back out of it. */
+    const state = resolutionState(group, resolutions(all));
+    if (state) {
+      body.append(el("div", { class: `analyte-resolved${state.unconfirmed ? " unconfirmed" : ""}` }, [
+        el("span", { class: "panel-kicker", text: ru() ? "ОТМЕЧЕНО КАК ПРОЛЕЧЕННОЕ" : "MARKED AS TREATED" }),
+        el("strong", { text: formatDate(state.date, "long") }),
+        state.note ? el("p", { text: state.note }) : null,
+        el("small", { text: state.confirmed
+          ? (ru() ? "После лечения пересдавали — результат в норме." : "Retested after treatment and back in range.")
+          : (ru() ? "После этой даты показатель не пересдавали." : "Not retested since that date.") })
+      ]));
+    } else if (["above", "below"].includes(group.verdict)) {
+      body.append(el("div", { class: "analyte-actions" }, [
+        el("button", { class: "ghost-button", type: "button",
+          text: ru() ? "Уже пролечено" : "Already treated",
+          onclick: () => openRecordForm("health", null, {
+            presets: resolutionPreset(group),
+            onSaved: () => { dialog?.close(); refresh(); }
+          }) }),
+        el("small", { text: ru()
+          ? "История сохранится полностью — уйдёт только пометка «нужно внимание»."
+          : "The full history is kept — only the needs-attention flag is dropped." })
       ]));
     }
 
@@ -669,7 +720,7 @@ export function labsView() {
       ]);
     })));
 
-    openDialog({
+    dialog = openDialog({
       title: group.name,
       subtitle: [categoryLabel("lab", group.category), latest.counterparty].filter(Boolean).join(" · "),
       size: "form",

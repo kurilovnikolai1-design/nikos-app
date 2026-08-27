@@ -857,6 +857,41 @@ button.metric-card:hover { border-color: var(--border-strong); }
   .condition-row time { grid-column: 1 / -1; }
 }
 
+/* Findings the owner has dealt with: present, readable, and visibly not in
+   the same category as the ones still waiting for someone. */
+.resolved-row {
+  display: grid; gap: 2px 10px; width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px 14px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  color: var(--text); text-align: left; cursor: pointer;
+}
+.resolved-row:hover { border-color: var(--accent); }
+.resolved-name { font-weight: 600; font-size: var(--step-sm); min-width: 0; }
+.resolved-row small { color: var(--faint); font-size: var(--step-xs); }
+.resolved-row em {
+  grid-column: 1 / -1; font-style: normal;
+  font-size: var(--step-xs); color: var(--faint);
+}
+.resolved-row em.good { color: var(--good, var(--accent)); }
+.resolved-row.unconfirmed { border-style: dashed; }
+
+.analyte-resolved {
+  display: grid; gap: 4px; padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.analyte-resolved.unconfirmed {
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 25%, transparent);
+}
+.analyte-resolved p { margin: 0; color: var(--muted); font-size: var(--step-sm); }
+.analyte-resolved small { color: var(--faint); font-size: var(--step-xs); }
+
+.analyte-actions { display: grid; gap: 6px; justify-items: start; }
+.analyte-actions small { color: var(--faint); font-size: var(--step-xs); }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

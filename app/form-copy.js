@@ -153,6 +153,12 @@ const NAME_BY_CATEGORY = {
     business:   ["Например: доля 30% в стройфирме", "e.g. 30% of the building firm"],
     valuable:   ["Например: часы, украшение", "e.g. a watch, jewellery"]
   },
+  health: {
+    procedure:  ["Например: колоноскопия, ЭГДС, УЗИ брюшной полости", "e.g. colonoscopy, gastroscopy, abdominal ultrasound"],
+    condition:  ["Например: гемохроматоз", "e.g. haemochromatosis"],
+    medication: ["Например: препарат и дозировка", "e.g. the drug and the dose"],
+    appointment:["Например: приём у гематолога", "e.g. haematologist appointment"]
+  },
   document: {
     property:  ["Например: выписка ЕГРН на участок", "e.g. title deed for the land"],
     insurance: ["Например: ОСАГО до марта", "e.g. car insurance to March"],

@@ -200,6 +200,9 @@ export const TYPES = {
     statuses: ["planned", "unverified", "confirmed", "active", "closed", "archived"],
     defaultStatus: "unverified",
     categories: [c("checkup", "Осмотр / анализы", "Check-up"), c("condition", "Состояние / диагноз", "Condition"),
+                 /* Endoscopy, imaging, biopsy — a report with findings rather
+                    than a row of numbers, so it needs its own home. */
+                 c("procedure", "Исследование / процедура", "Procedure or imaging"),
                  c("medication", "Лекарство", "Medication"), c("routine", "Режим / привычка", "Routine"),
                  c("appointment", "Приём у врача", "Appointment"), c("vaccination", "Прививка", "Vaccination"), c("other", "Другое", "Other")]
   },

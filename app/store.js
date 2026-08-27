@@ -5,8 +5,8 @@
    the whole localStorage blob. Here the data lives in one place, the DOM is
    only ever a projection of it, and nothing is inferred from rendered text. */
 
-import * as persist from "./persist.js?v=20260827-104630";
-import { isLive, TYPES } from "./schema.js?v=20260827-104630";
+import * as persist from "./persist.js?v=20260827-115943";
+import { isLive, TYPES } from "./schema.js?v=20260827-115943";
 
 const DEFAULT_SETTINGS = {
   baseCurrency: "RUB",

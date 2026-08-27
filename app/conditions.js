@@ -16,7 +16,7 @@
  * Guessing a diagnosis from an analyte is precisely the thing this product
  * does not do. */
 
-import { byAnalyte } from "./labs-parse.js?v=20260827-104630";
+import { byAnalyte } from "./labs-parse.js?v=20260827-115943";
 
 const DAY = 86_400_000;
 
@@ -167,7 +167,10 @@ const CONDITIONS = [
 /* The owner's conditions, read only from what he wrote down himself. */
 export function knownConditions(records) {
   const declared = records.filter((record) =>
-    record.type === "health" && !record.deletedAt && record.category === "condition");
+    record.type === "health" && !record.deletedAt && record.category === "condition"
+    /* "closed" marks a finding the owner has dealt with — see resolved.js.
+       It shares this category, so it must not read as a live condition. */
+    && record.status !== "closed");
 
   const found = [];
   for (const record of declared) {
