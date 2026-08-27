@@ -491,7 +491,7 @@ function openDataForm(type = "record", existing = null) {
   dataCategory.value = options[0]?.[0] || "other";
   populateLinkedRecordOptions(existing);
   updateDataFormFields(activeFormType);
-  dataModalTitle.textContent = existing ? ui("Edit record", "Изменить запись") : ui(copy.title[0], copy.title[1]);
+  dataModalTitle.textContent = existing ? ui("Edit record", "Изменить запись") : ui(displayCopy.title[0], displayCopy.title[1]);
   dataModalBackdrop.classList.add("open");
   dataModalBackdrop.setAttribute("aria-hidden", "false");
   setTimeout(() => dataName.focus(), 20);
