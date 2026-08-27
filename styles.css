@@ -654,6 +654,57 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .trend-foot b { font-family: var(--mono); font-size: var(--step-md); }
 .trend-foot small { color: var(--faint); font-size: var(--step-xs); }
 
+/* ---------------------------------------------------------------- days */
+
+/* A year of a wearable is about 1500 readings. As a flat list that is
+   unreadable, so a day becomes one card and the raw records hide underneath. */
+.day-list { display: grid; gap: 6px; }
+
+.day-card {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); overflow: hidden;
+  border-left: 3px solid var(--border-strong);
+}
+.day-card.tone-good { border-left-color: var(--green); }
+.day-card.tone-fair { border-left-color: var(--amber); }
+.day-card.tone-low { border-left-color: var(--red); }
+.day-card.tone-unknown { border-left-color: var(--border-strong); }
+.day-card.open { background: var(--surface-3); }
+
+.day-head {
+  display: grid; grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center; gap: 14px;
+  width: 100%; min-height: 58px; padding: 10px 14px;
+  text-align: left; color: var(--text);
+}
+.day-head:hover { background: var(--surface-hover); }
+.day-date { display: flex; flex-direction: column; gap: 1px; }
+.day-date strong { font-size: var(--step-sm); font-weight: 700; }
+.day-date small { color: var(--faint); font-size: var(--step-xs); text-transform: capitalize; }
+
+.day-chips { display: flex; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.day-chip { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.day-chip small { color: var(--faint); font-size: var(--step-xs); white-space: nowrap; }
+.day-chip b { font: 500 var(--step-sm)/1.2 var(--mono); white-space: nowrap; }
+
+.day-workouts { color: var(--muted); font: 500 var(--step-xs)/1 var(--mono); white-space: nowrap; }
+
+.day-detail { padding: 4px 14px 14px; display: grid; gap: 10px; }
+
+/* The overview cards say whether a number moved the right way. */
+.day-metric .delta { font-weight: 600; }
+.day-metric .delta.better { color: var(--green); }
+.day-metric .delta.worse { color: var(--red); }
+.day-metric .delta.flat { color: var(--faint); }
+.day-metric.better { border-color: color-mix(in srgb, var(--green) 34%, var(--border)); }
+.day-metric.worse { border-color: color-mix(in srgb, var(--red) 30%, var(--border)); }
+
+@media (max-width: 900px) {
+  .day-head { grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
+  .day-chips { grid-column: 1 / -1; gap: 12px; }
+  .day-chip small { font-size: 11px; }
+}
+
 /* ---------------------------------------------------------------- labs */
 
 .lab-paste-body { display: grid; gap: 14px; padding-bottom: 8px; }

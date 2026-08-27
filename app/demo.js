@@ -5,8 +5,8 @@
    quietly made the dashboard look busier than the owner's real life. Sample
    data is now opt-in, made of ordinary records, and deletable like any other. */
 
-import * as store from "./store.js?v=20260827-082424";
-import { blankRecord } from "./records.js?v=20260827-082424";
+import * as store from "./store.js?v=20260827-083244";
+import { blankRecord } from "./records.js?v=20260827-083244";
 
 const shift = (days) => {
   const date = new Date();

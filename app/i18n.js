@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-082424";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-083244";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -264,6 +264,20 @@ const DICT = {
   "health.days": { ru: "дней", en: "days" },
   "health.lastWorkout": { ru: "Последняя тренировка", en: "Last workout" },
   "health.importCsv": { ru: "Импорт CSV", en: "Import CSV" },
+  "health.byDay": { ru: "По дням", en: "By day" },
+  "health.overview": { ru: "Обзор", en: "Overview" },
+  "health.vsPrevious": { ru: "к прошлому периоду", en: "vs the period before" },
+  "health.noReading": { ru: "нет данных", en: "no reading" },
+  "health.daysWithData": { ru: "дней с данными", en: "days with data" },
+  "health.noChange": { ru: "без изменений", en: "no change" },
+  "health.showRaw": { ru: "Показать отдельные записи", en: "Show individual records" },
+  "health.hideRaw": { ru: "Скрыть отдельные записи", en: "Hide individual records" },
+  "health.better": { ru: "лучше", en: "better" },
+  "health.worse": { ru: "хуже", en: "worse" },
+  "health.month": { ru: "30 дней", en: "30 days" },
+  "health.week7": { ru: "7 дней", en: "7 days" },
+  "health.quarter": { ru: "90 дней", en: "90 days" },
+  "health.byMonth": { ru: "по месяцам", en: "by month" },
   "health.addLab": { ru: "Добавить анализы", en: "Add lab results" },
   "health.pasteLab": { ru: "Вставить из PDF", en: "Paste from a PDF" },
   "health.pasteLabHint": { ru: "Откройте PDF из лаборатории, выделите таблицу с результатами, скопируйте и вставьте сюда. Текст никуда не отправляется — разбор идёт в вашем браузере.", en: "Open the lab PDF, select the results table, copy it and paste it here. The text is not sent anywhere — parsing happens in your browser." },

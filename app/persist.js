@@ -5,8 +5,8 @@
    "Запись сохранена". Every write here returns an explicit result, and the
    caller is required to surface a failure. */
 
-import * as lock from "./lock.js?v=20260827-082424";
-import * as idb from "./idb.js?v=20260827-082424";
+import * as lock from "./lock.js?v=20260827-083244";
+import * as idb from "./idb.js?v=20260827-083244";
 
 export const VAULT_KEY = "nikos-vault";
 export const META_KEY = "nikos-vault-meta";
@@ -69,14 +69,32 @@ export const emptyVault = () => ({
    browser without it, and as the place a previous version left its data. */
 let useIdb = idb.isSupported();
 
+const recordCount = (raw) => {
+  if (typeof raw !== "string") return -1;
+  try {
+    const parsed = JSON.parse(raw);
+    if (lock.isEnvelope(parsed)) return -1;          // encrypted: cannot count, never discard
+    return Array.isArray(parsed?.records) ? parsed.records.length : -1;
+  } catch { return -1; }
+};
+
 async function readVault() {
+  const legacy = readRaw(VAULT_KEY);
+
   if (useIdb) {
     try {
       const stored = await idb.get(VAULT_KEY);
-      if (typeof stored === "string") return stored;
+      if (typeof stored === "string") {
+        /* An empty vault in IndexedDB must never win over records still sitting
+           in localStorage. That would silently discard everything the previous
+           version saved — the one failure this product cannot afford. */
+        if (recordCount(stored) === 0 && recordCount(legacy) > 0) return legacy;
+        return stored;
+      }
     } catch { useIdb = false; }
   }
-  return readRaw(VAULT_KEY);
+
+  return legacy;
 }
 
 async function writeVault(value) {
