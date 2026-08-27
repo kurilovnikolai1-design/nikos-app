@@ -1,20 +1,20 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-144534";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-144534";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-144534";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-144534";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-144534";
-import * as lock from "../lock.js?v=20260827-144534";
-import * as persist from "../persist.js?v=20260827-144534";
-import * as store from "../store.js?v=20260827-144534";
-import * as records from "../records.js?v=20260827-144534";
-import * as cloud from "../cloud.js?v=20260827-144534";
-import * as notify from "../notify.js?v=20260827-144534";
-import * as backups from "../backups.js?v=20260827-144534";
-import { refreshRates } from "../main-rates.js?v=20260827-144534";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-144534";
-import { whoopRow } from "../whoop.js?v=20260827-144534";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-144942";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-144942";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-144942";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-144942";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-144942";
+import * as lock from "../lock.js?v=20260827-144942";
+import * as persist from "../persist.js?v=20260827-144942";
+import * as store from "../store.js?v=20260827-144942";
+import * as records from "../records.js?v=20260827-144942";
+import * as cloud from "../cloud.js?v=20260827-144942";
+import * as notify from "../notify.js?v=20260827-144942";
+import * as backups from "../backups.js?v=20260827-144942";
+import { refreshRates } from "../main-rates.js?v=20260827-144942";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-144942";
+import { whoopRow } from "../whoop.js?v=20260827-144942";
 
 const ru = () => getLocale() === "ru";
 
@@ -798,7 +798,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-144534");
+                       const suite = await import("../selftest.js?v=20260827-144942");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

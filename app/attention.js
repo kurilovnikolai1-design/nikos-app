@@ -5,9 +5,10 @@
    points at the record that produced it, and the count in the sidebar is the
    number of real things waiting. MASTER_SPEC §13.2. */
 
-import { t, getLocale, formatDate, relativeDays, countOf, PLURALS } from "./i18n.js?v=20260827-144534";
-import { isLive, TYPES, COUNTS_AS_VERIFIED, BALANCE_ROLE } from "./schema.js?v=20260827-144534";
-import { isStale } from "./rates.js?v=20260827-144534";
+import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS } from "./i18n.js?v=20260827-144942";
+import { isLive, TYPES, COUNTS_AS_VERIFIED, BALANCE_ROLE } from "./schema.js?v=20260827-144942";
+import { isStale } from "./rates.js?v=20260827-144942";
+import { overdueChecks } from "./conditions.js?v=20260827-144942";
 
 const DAY = 86_400_000;
 const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
@@ -95,6 +96,23 @@ export function buildAttention(state, { rates, settings }) {
               recordId: record.id, view: TYPES[record.type]?.view || "command", weight: 50 });
       }
     }
+  }
+
+  /* Follow-up that has slipped. A statement about dates, not about health:
+     the owner declared the condition, the interval is the ordinary one, and
+     the only claim is that this long has passed. */
+  for (const check of overdueChecks(state.records, { locale: getLocale() }).slice(0, 3)) {
+    add({
+      id: `retest-${check.name}`,
+      severity: check.months >= check.everyMonths * 2 ? "warning" : "info",
+      marker: "⚗",
+      title: t("att.retestDue"),
+      detail: ru
+        ? `${check.analyte} · ${check.months} ${plural(check.months, PLURALS.month)} назад · ${check.specialist}`
+        : `${check.analyte} · ${check.months} months ago · ${check.specialist}`,
+      view: "labs",
+      weight: 60
+    });
   }
 
   /* Money that is entered but not counted, which is the single most confusing

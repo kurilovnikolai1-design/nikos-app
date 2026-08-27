@@ -1,27 +1,28 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-144534";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-144942";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-144534";
-import { formatMoney } from "../money.js?v=20260827-144534";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-144534";
-import { categoriesOf } from "../schema.js?v=20260827-144534";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-144534";
-import { openRecordForm } from "../form.js?v=20260827-144534";
-import { navigate } from "../router.js?v=20260827-144534";
-import { importCsv } from "../csv.js?v=20260827-144534";
-import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-144534";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-144534";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-144534";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-144534";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-144534";
-import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-144534";
-import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-144534";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-144534";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-144534";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-144534";
-import * as store from "../store.js?v=20260827-144534";
-import * as records from "../records.js?v=20260827-144534";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-144942";
+import { formatMoney } from "../money.js?v=20260827-144942";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-144942";
+import { categoriesOf } from "../schema.js?v=20260827-144942";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-144942";
+import { openRecordForm } from "../form.js?v=20260827-144942";
+import { navigate } from "../router.js?v=20260827-144942";
+import { importCsv } from "../csv.js?v=20260827-144942";
+import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-144942";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-144942";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-144942";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-144942";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-144942";
+import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-144942";
+import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-144942";
+import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260827-144942";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-144942";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-144942";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-144942";
+import * as store from "../store.js?v=20260827-144942";
+import * as records from "../records.js?v=20260827-144942";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -394,6 +395,9 @@ export function labsView() {
      el("button", { class: "ghost-button", type: "button",
                     text: ru() ? "＋ Выписка" : "＋ Report",
                     onclick: () => openProcedurePaste({ onDone: refresh }) }),
+     el("button", { class: "ghost-button", type: "button",
+                    text: ru() ? "К врачу" : "For a doctor",
+                    onclick: () => openDoctorSummary() }),
      el("button", { class: "primary-button", type: "button", text: `＋ ${t("health.pasteLab")}`,
                     onclick: () => openLabPaste({ onDone: refresh }) })]));
 
@@ -619,6 +623,82 @@ export function labsView() {
         off ? el("em", { text: verdictLabel(group.verdict) }) : null
       ])
     ]);
+  }
+
+  /* One sheet to take to an appointment. Assembled, not summarised: every
+     line is a number the laboratory printed or something the owner wrote,
+     with its date. */
+  function openDoctorSummary() {
+    const summary = buildSummary(all, { locale: getLocale() });
+    const body = el("div", { class: "doctor-summary" });
+
+    const section = (title, children) => {
+      if (!children || (Array.isArray(children) && !children.length)) return null;
+      return el("section", {}, [el("h3", { text: title }), ...(Array.isArray(children) ? children : [children])]);
+    };
+
+    const dated = (date) => formatDate(date, "medium").replace(/\.$/, "");
+
+    body.append(el("p", { class: "doctor-meta", text: ru()
+      ? `Собрано ${dated(summary.generatedAt)} · сдач: ${summary.visitCount} · показателей: ${summary.analyteCount}`
+      : `Assembled ${dated(summary.generatedAt)} · ${summary.visitCount} visits · ${summary.analyteCount} analytes` }));
+
+    body.append(section(ru() ? "Состояния" : "Conditions",
+      summary.conditions.map((item) => el("div", { class: "doctor-line" }, [
+        el("strong", { text: item.name }),
+        el("span", { text: item.hereditary ? (ru() ? "наследственное" : "hereditary") : "" }),
+        item.overdue.length
+          ? el("small", { text: ru()
+              ? `Не пересдавалось: ${item.overdue.map((o) => `${o.label} (${o.months} мес.)`).join(", ")}`
+              : `Overdue: ${item.overdue.map((o) => `${o.label} (${o.months}m)`).join(", ")}` })
+          : null
+      ]))));
+
+    body.append(section(ru() ? "Вне нормы лаборатории" : "Outside the laboratory range",
+      summary.flagged.map((item) => el("div", { class: "doctor-line" }, [
+        el("strong", { text: item.name }),
+        el("span", { text: `${formatNumber(item.value, 2)}${item.unit ? ` ${item.unit}` : ""} · ${dated(item.date)}` }),
+        el("small", { text: ru()
+          ? `норма ${rangeText(item) ?? "не указана"} · держится с ${dated(item.since)} · измерений ${item.readings}`
+          : `range ${rangeText(item) ?? "not given"} · since ${dated(item.since)} · ${item.readings} readings` })
+      ]))));
+
+    body.append(section(ru() ? "Лекарства" : "Medication",
+      summary.medication.map((item) => el("div", { class: "doctor-line" }, [
+        el("strong", { text: item.name }),
+        item.date ? el("span", { text: dated(item.date) }) : null,
+        item.details ? el("small", { text: item.details }) : null
+      ]))));
+
+    body.append(section(ru() ? "Исследования" : "Procedures",
+      summary.procedures.map((item) => el("div", { class: "doctor-line" }, [
+        el("strong", { text: item.name }),
+        el("span", { text: dated(item.date) }),
+        item.details ? el("small", { text: item.details }) : null
+      ]))));
+
+    body.append(section(ru() ? "Уже пролечено" : "Already treated",
+      summary.treated.map((item) => el("div", { class: "doctor-line" }, [
+        el("strong", { text: item.name }),
+        el("span", { text: dated(item.date) }),
+        item.note ? el("small", { text: item.note }) : null
+      ]))));
+
+    body.append(el("p", { class: "panel-note", text: ru() ? SUMMARY_NOTE.ru : SUMMARY_NOTE.en }));
+
+    openDialog({
+      title: ru() ? "Выжимка для приёма" : "Sheet for an appointment",
+      subtitle: summary.lastVisit
+        ? (ru() ? `Последняя сдача ${dated(summary.lastVisit)}` : `Last visit ${dated(summary.lastVisit)}`)
+        : "",
+      size: "form",
+      body,
+      footer: el("div", { class: "dialog-actions" }, [
+        el("button", { class: "primary-button", type: "button",
+                       text: ru() ? "Распечатать" : "Print",
+                       onclick: () => window.print() })
+      ])
+    });
   }
 
   /* What is tracked alongside a condition the owner has written down.

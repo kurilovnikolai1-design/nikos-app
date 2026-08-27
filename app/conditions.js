@@ -16,7 +16,7 @@
  * Guessing a diagnosis from an analyte is precisely the thing this product
  * does not do. */
 
-import { byAnalyte } from "./labs-parse.js?v=20260827-144534";
+import { byAnalyte } from "./labs-parse.js?v=20260827-144942";
 
 const DAY = 86_400_000;
 
@@ -247,6 +247,31 @@ export function conditionPanels(records, { locale = "ru", now = Date.now() } = {
       overdueCount: tracked.filter((item) => item.overdue).length
     };
   });
+}
+
+/* Everything overdue across every declared condition, as plain reminders the
+   notifier can deliver. Deliberately a statement about the calendar: it says
+   an analyte has not been measured for longer than the follow-up interval
+   usually used, never that anything is wrong. */
+export function overdueChecks(records, { locale = "ru", now = Date.now() } = {}) {
+  const out = [];
+
+  for (const panel of conditionPanels(records, { locale, now })) {
+    for (const entry of panel.tracked) {
+      if (!entry.overdue) continue;
+      out.push({
+        condition: panel.name,
+        specialist: panel.specialist,
+        analyte: entry.label,
+        name: entry.name,
+        date: entry.date,
+        months: Math.round(entry.days / 30),
+        everyMonths: panel.everyMonths
+      });
+    }
+  }
+
+  return out.sort((a, b) => b.months - a.months);
 }
 
 export const CONDITION_NOTE = {

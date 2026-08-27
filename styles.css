@@ -1144,6 +1144,33 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .restore-row strong { font-size: var(--step-sm); }
 .restore-row small { color: var(--faint); font-size: var(--step-xs); }
 
+/* The appointment sheet: dense, dated, readable at arm's length. */
+.doctor-summary { display: grid; gap: 18px; }
+.doctor-meta { margin: 0; color: var(--faint); font-size: var(--step-xs); }
+.doctor-summary section { display: grid; gap: 8px; }
+.doctor-summary h3 {
+  margin: 0; font-size: var(--step-xs); letter-spacing: .07em;
+  text-transform: uppercase; color: var(--faint);
+  border-bottom: 1px solid var(--line); padding-bottom: 5px;
+}
+.doctor-line { display: grid; gap: 2px; }
+.doctor-line strong { font-size: var(--step-sm); }
+.doctor-line span { font-size: var(--step-sm); font-variant-numeric: tabular-nums; }
+.doctor-line small { color: var(--faint); font-size: var(--step-xs); line-height: 1.45; }
+
+/* Printing the sheet must print the sheet, not the app around it. */
+@media print {
+  body > *:not(.dialog-backdrop) { display: none !important; }
+  .dialog-backdrop { position: static !important; background: none !important; }
+  .dialog-panel {
+    box-shadow: none !important; border: 0 !important; max-height: none !important;
+    width: 100% !important; max-width: none !important;
+  }
+  .dialog-actions, .dialog-close, .panel-note { display: none !important; }
+  .doctor-summary, .doctor-line small { color: #000 !important; }
+  .doctor-summary h3 { color: #444 !important; border-color: #999 !important; }
+}
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);

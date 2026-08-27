@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-144534";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-144942";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -143,6 +143,7 @@ const DICT = {
   "att.debtDue": { ru: "Срок возврата долга", en: "Debt due" },
   "att.documentExpiring": { ru: "Документ истекает", en: "Document expiring" },
   "att.reviewDue": { ru: "Пора пересмотреть", en: "Review due" },
+  "att.retestDue": { ru: "Пора пересдать", en: "Due for a retest" },
   "att.reminder": { ru: "Напоминание", en: "Reminder" },
   "att.unconfirmed": { ru: "Записи ждут подтверждения", en: "Records await confirmation" },
   "att.unconfirmedHint": { ru: "Пока не подтвердите — не попадут в суммы", en: "Excluded from totals until confirmed" },
