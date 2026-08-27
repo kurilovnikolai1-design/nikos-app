@@ -2,13 +2,13 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-084202";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-084202";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-084202";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-084202";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-084202";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-084202";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-084202";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-085213";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-085213";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-085213";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-085213";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-085213";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-085213";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-085213";
 
 const VIEWS = ["command", "inbox", "tasks", "projects", "capital", "debts", "cashflow", "investments",
   "crypto", "assets", "health", "documents", "people", "decisions", "timeline", "settings"];

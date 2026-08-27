@@ -5,8 +5,8 @@
    a month of income and expenses could be entered and the totals stayed empty
    because the default status excluded them. Nothing is dropped in silence now. */
 
-import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-084202";
-import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-084202";
+import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-085213";
+import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-085213";
 
 export const EXCLUSION = {
   UNCONFIRMED: "unconfirmed",

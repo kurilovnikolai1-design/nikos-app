@@ -966,6 +966,10 @@ input[type="date"].form-control, input[type="time"].form-control { font-family: 
 }
 .quick-tile:hover { border-color: var(--accent); color: var(--accent); }
 .quick-icon { font-size: 22px; }
+.import-choice { grid-template-columns: 1fr; }
+.import-choice .quick-tile { min-height: 84px; padding: 16px; text-align: left; align-items: flex-start; }
+.import-choice .quick-tile small { color: var(--faint); font-weight: 400; }
+.quick-tile.danger:hover { border-color: var(--red); color: var(--red); }
 
 /* ---------------------------------------------------------------- search */
 

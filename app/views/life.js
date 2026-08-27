@@ -1,19 +1,19 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-084202";
+import { el, panel, panelHeader, metricCard, emptyState, toast } from "../ui.js?v=20260827-085213";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-084202";
-import { formatMoney } from "../money.js?v=20260827-084202";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-084202";
-import { categoriesOf } from "../schema.js?v=20260827-084202";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-084202";
-import { openRecordForm } from "../form.js?v=20260827-084202";
-import { importCsv } from "../csv.js?v=20260827-084202";
-import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-084202";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-084202";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-084202";
-import * as store from "../store.js?v=20260827-084202";
-import * as records from "../records.js?v=20260827-084202";
+         statusLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-085213";
+import { formatMoney } from "../money.js?v=20260827-085213";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-085213";
+import { categoriesOf } from "../schema.js?v=20260827-085213";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-085213";
+import { openRecordForm } from "../form.js?v=20260827-085213";
+import { importCsv } from "../csv.js?v=20260827-085213";
+import { openLabPaste, labPanels, analyteHistory, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-085213";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-085213";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-085213";
+import * as store from "../store.js?v=20260827-085213";
+import * as records from "../records.js?v=20260827-085213";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";

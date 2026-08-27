@@ -9,12 +9,12 @@
    Parsing runs entirely in the browser. The text of a medical report is never
    uploaded, which is the whole reason this is a paste box and not a service. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-084202";
-import { t, getLocale, formatDate, categoryLabel } from "./i18n.js?v=20260827-084202";
-import { categoriesOf } from "./schema.js?v=20260827-084202";
-import { parseLabText, guessDate, guessLab, rangeVerdict, labPanels, analyteHistory } from "./labs-parse.js?v=20260827-084202";
-import * as store from "./store.js?v=20260827-084202";
-import * as records from "./records.js?v=20260827-084202";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-085213";
+import { t, getLocale, formatDate, categoryLabel } from "./i18n.js?v=20260827-085213";
+import { categoriesOf } from "./schema.js?v=20260827-085213";
+import { parseLabText, guessDate, guessLab, rangeVerdict, labPanels, analyteHistory } from "./labs-parse.js?v=20260827-085213";
+import * as store from "./store.js?v=20260827-085213";
+import * as records from "./records.js?v=20260827-085213";
 
 const ru = () => getLocale() === "ru";
 

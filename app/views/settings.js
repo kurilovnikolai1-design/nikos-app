@@ -1,18 +1,18 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-084202";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-084202";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-084202";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-084202";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-084202";
-import * as lock from "../lock.js?v=20260827-084202";
-import * as persist from "../persist.js?v=20260827-084202";
-import * as store from "../store.js?v=20260827-084202";
-import * as records from "../records.js?v=20260827-084202";
-import * as cloud from "../cloud.js?v=20260827-084202";
-import { refreshRates } from "../main-rates.js?v=20260827-084202";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-084202";
-import { whoopRow } from "../whoop.js?v=20260827-084202";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-085213";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-085213";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-085213";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-085213";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-085213";
+import * as lock from "../lock.js?v=20260827-085213";
+import * as persist from "../persist.js?v=20260827-085213";
+import * as store from "../store.js?v=20260827-085213";
+import * as records from "../records.js?v=20260827-085213";
+import * as cloud from "../cloud.js?v=20260827-085213";
+import { refreshRates } from "../main-rates.js?v=20260827-085213";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-085213";
+import { whoopRow } from "../whoop.js?v=20260827-085213";
 
 const ru = () => getLocale() === "ru";
 
@@ -310,23 +310,50 @@ export function settingsView() {
         if (!Array.isArray(incoming)) { toast(ru() ? "Это не резервная копия Nik'Os" : "That is not a Nik'Os backup", { tone: "danger" }); return; }
 
         const migrated = records.migrateAll(incoming);
-        const ok = await confirmDialog({
-          title: t("set.importData"),
-          message: ru()
-            ? `Заменить текущие данные? Сейчас записей: ${store.allRecords().length}, в файле: ${migrated.length}.`
-            : `Replace current data? You have ${store.allRecords().length} records; the file has ${migrated.length}.`,
-          confirmLabel: t("set.importData"), tone: "danger"
-        });
-        if (!ok) return;
+        const existing = store.allRecords().length;
 
-        const result = await store.replaceAll({
-          records: migrated,
-          audit: Array.isArray(parsed?.audit) ? parsed.audit : [],
-          settings: parsed?.settings || {},
-          rates: parsed?.rates || store.getRates()
-        });
+        /* Replacing everything is right for restoring a backup and wrong for
+           bringing in a decade of lab history — that would silently delete the
+           records already here. The choice belongs to the owner, so it is asked
+           rather than assumed. */
+        const mode = existing
+          ? await importChoice(existing, migrated.length)
+          : "replace";
+        if (!mode) return;
+
+        let result;
+        if (mode === "merge") {
+          const byId = new Map(store.allRecords().map((record) => [record.id, record]));
+          let added = 0;
+          let updated = 0;
+          for (const record of migrated) {
+            if (byId.has(record.id)) updated += 1; else added += 1;
+            byId.set(record.id, record);
+          }
+          result = await store.replaceAll({
+            records: [...byId.values()],
+            audit: store.getAudit(),
+            settings: store.getSettings(),
+            rates: store.getRates()
+          });
+          if (result.ok) {
+            toast(ru() ? `Добавлено: ${added}, обновлено: ${updated}` : `${added} added, ${updated} updated`,
+                  { tone: "success", duration: 6000 });
+          }
+        } else {
+          result = await store.replaceAll({
+            records: migrated,
+            audit: Array.isArray(parsed?.audit) ? parsed.audit : [],
+            settings: { ...store.getSettings(), ...(parsed?.settings || {}) },
+            rates: parsed?.rates || store.getRates()
+          });
+          if (result.ok) {
+            toast(ru() ? `Восстановлено записей: ${migrated.length}` : `${migrated.length} records restored`, { tone: "success" });
+          }
+        }
+
         if (!result.ok) { toast(t("sec.storageFull"), { tone: "danger" }); return; }
-        toast(ru() ? `Восстановлено записей: ${migrated.length}` : `${migrated.length} records restored`, { tone: "success" });
+        if (cloud.isConnected()) await cloud.syncAll();
         refresh();
       };
       reader.readAsText(file);
@@ -349,6 +376,42 @@ export function settingsView() {
       ? (ru() ? `Добавлено записей: ${result.count}` : `${result.count} sample records added`)
       : t("sec.storageFull"), { tone: result.ok ? "success" : "danger" });
     refresh();
+  }
+
+  /* Two very different intentions share one file picker, so they are separated
+     explicitly instead of one being assumed. */
+  function importChoice(existing, incoming) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => { if (!settled) { settled = true; resolve(value); } };
+
+      const dialog = openDialog({
+        title: t("set.importData"),
+        subtitle: ru()
+          ? `Сейчас записей: ${existing}. В файле: ${incoming}.`
+          : `You have ${existing} records. The file has ${incoming}.`,
+        size: "narrow",
+        body: el("div", { class: "quick-grid import-choice" }, [
+          el("button", {
+            class: "quick-tile", type: "button",
+            onclick: () => { finish("merge"); dialog.close(); }
+          }, [
+            el("span", { class: "quick-icon", text: "＋" }),
+            el("span", { text: ru() ? "Добавить к существующим" : "Add to what is here" }),
+            el("small", { text: ru() ? "Ничего не удаляется" : "Nothing is removed" })
+          ]),
+          el("button", {
+            class: "quick-tile danger", type: "button",
+            onclick: () => { finish("replace"); dialog.close(); }
+          }, [
+            el("span", { class: "quick-icon", text: "⟳" }),
+            el("span", { text: ru() ? "Заменить всё" : "Replace everything" }),
+            el("small", { text: ru() ? `Удалит текущие ${existing}` : `Deletes the current ${existing}` })
+          ])
+        ]),
+        onClose: () => finish(null)
+      });
+    });
   }
 
   async function removeDemo() {
@@ -547,7 +610,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-084202");
+                       const suite = await import("../selftest.js?v=20260827-085213");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length
