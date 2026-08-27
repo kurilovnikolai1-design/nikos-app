@@ -5,8 +5,8 @@
    "Запись сохранена". Every write here returns an explicit result, and the
    caller is required to surface a failure. */
 
-import * as lock from "./lock.js?v=20260827-133445";
-import * as idb from "./idb.js?v=20260827-133445";
+import * as lock from "./lock.js?v=20260827-135217";
+import * as idb from "./idb.js?v=20260827-135217";
 
 export const VAULT_KEY = "nikos-vault";
 export const META_KEY = "nikos-vault-meta";
@@ -34,7 +34,7 @@ const RECORD_DEFAULTS = {
   priority: "medium", terms: "", rate: null, owner: "me", progress: null, ownershipPercent: null,
   source: "", confidence: "medium", reminderDate: null, linkedIds: [], recurring: false,
   frequency: "monthly", nextDueDate: null, contact: "", reasoning: "", details: "",
-  attachment: null, targetAmountMinor: null, targetDate: null, deletedAt: null
+  attachment: null, targetAmountMinor: null, ticker: null, market: null, targetDate: null, deletedAt: null
 };
 
 const isEmptyValue = (value) =>

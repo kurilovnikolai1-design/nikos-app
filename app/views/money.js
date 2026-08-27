@@ -1,18 +1,20 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-133445";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-135217";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-133445";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-133445";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-133445";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-133445";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-133445";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-133445";
-import { isVerified } from "../schema.js?v=20260827-133445";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-133445";
-import { openRecordForm } from "../form.js?v=20260827-133445";
-import * as store from "../store.js?v=20260827-133445";
-import * as records from "../records.js?v=20260827-133445";
+         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-135217";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-135217";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-135217";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-135217";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-135217";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-135217";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-135217";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-135217";
+import { isVerified } from "../schema.js?v=20260827-135217";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-135217";
+import { openRecordForm } from "../form.js?v=20260827-135217";
+import * as store from "../store.js?v=20260827-135217";
+import * as records from "../records.js?v=20260827-135217";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -508,7 +510,19 @@ export function investmentsView() {
 
   page.append(pageHeading(t("view.investments"),
     ru() ? "Владение фиксируется явно. Обсуждаемое — не значит ваше." : "Ownership is explicit. Discussed is not owned.",
-    addButton("investment", typeLabel("investment"), refresh)));
+    [addButton("security", typeLabel("security"), refresh, "ghost-button"),
+     addButton("investment", typeLabel("investment"), refresh, "primary-button")]));
+
+  /* Securities first: they have a public price, so their figures are the ones
+     that can be trusted without the owner having updated anything. */
+  const securities = store.recordsOfType("security");
+  if (securities.length) {
+    page.append(positionsPanel(securities, ["security"],
+      ru() ? "БУМАГИ" : "SECURITIES",
+      ru() ? "Добавьте тикер и количество — цена подтянется сама." : "Add a ticker and a quantity — the price is fetched for you.",
+      "security"));
+    page.append(el("p", { class: "panel-note", text: ru() ? QUOTES_NOTE.ru : QUOTES_NOTE.en }));
+  }
 
   page.append(el("div", { class: "metric-grid" }, [
     metricCard({ kicker: ru() ? "В РАСЧЁТЕ" : "COUNTED", value: money(worth.buckets.invested),
@@ -553,6 +567,84 @@ export function investmentsView() {
 
 /* ---------- Crypto ---------- */
 
+/* A position, not just a holding: what it is worth, what it cost, and the
+   difference. Shared between crypto and securities because the two differ
+   only in where the price comes from. */
+function positionsPanel(records, types, title, emptyText, addType) {
+  const book = portfolio(records, base(), store.getRates(), types);
+
+  if (!records.length) {
+    return panel("records-panel",
+      panelHeader(title, ru() ? "Наблюдаемые активы" : "Observed holdings"),
+      recordList(`${addType}-holdings`, records, { empty: emptyText, addType }));
+  }
+
+  const sign = (minor) => `${minor > 0 ? "+" : ""}${money(minor)}`;
+
+  return panel("records-panel positions-panel",
+    panelHeader(title,
+      book.pnlMinor === null
+        ? (ru() ? `${money(book.valueMinor)} · прибыль не полная` : `${money(book.valueMinor)} · partial profit`)
+        : (ru() ? `${money(book.valueMinor)} · ${sign(book.pnlMinor)}` : `${money(book.valueMinor)} · ${sign(book.pnlMinor)}`),
+      addButton(addType, t("app.add"), refresh, "small-button")),
+
+    el("div", { class: "position-list" }, book.positions.map((position) => {
+      const record = position.record;
+      const up = position.state === PNL_STATE.UP;
+      const down = position.state === PNL_STATE.DOWN;
+
+      return el("button", {
+        class: `position-row${up ? " up" : ""}${down ? " down" : ""}`, type: "button",
+        onclick: () => openRecordForm(record.type, record, { onSaved: refresh })
+      }, [
+        el("div", { class: "position-head" }, [
+          el("strong", { text: record.name || record.coin || record.ticker || "—" }),
+          el("span", { class: "position-value", text: position.valueMinor != null ? money(position.valueMinor) : "—" })
+        ]),
+
+        el("div", { class: "position-detail" }, [
+          record.quantity ? el("span", { text: `${formatQuantity(record.quantity)} ${record.coin || record.ticker || ""}`.trim() }) : null,
+          /* Per unit, and said so: without the unit these read as totals and
+             a five-figure "вход" next to a six-figure "сейчас" is confusing. */
+          position.entryPriceMinor
+            ? el("span", { text: (() => {
+                const unit = record.coin || record.ticker || "";
+                return ru()
+                  ? `вход ${money(position.entryPriceMinor)}${unit ? ` за ${unit}` : " за штуку"} → сейчас ${money(position.currentPriceMinor)}`
+                  : `in at ${money(position.entryPriceMinor)}${unit ? ` per ${unit}` : " each"} → now ${money(position.currentPriceMinor)}`;
+              })() })
+            : null
+        ]),
+
+        position.state === PNL_STATE.NO_COST
+          ? el("small", { class: "position-pnl muted", text: ru()
+              ? "Впишите, сколько вложили — тогда будет видно прибыль."
+              : "Add what it cost and the profit will show." })
+          : position.state === PNL_STATE.NO_PRICE
+            ? el("small", { class: "position-pnl muted", text: ru() ? "Нет цены" : "No price" })
+            : el("small", { class: "position-pnl", text:
+                `${sign(position.pnlMinor)}${position.pnlPercent === null ? "" : `  ${position.pnlPercent > 0 ? "+" : ""}${position.pnlPercent.toFixed(1)}%`}` })
+      ]);
+    })),
+
+    /* A position with no price is missing from both halves of the total, so
+       the total is about fewer positions than the list shows. Saying so is
+       the difference between a partial figure and a wrong one. */
+    book.unpriced
+      ? el("p", { class: "panel-note warn", text: ru()
+          ? `Позиций без котировки: ${book.unpriced}. В сумму и в прибыль они не вошли.`
+          : `${book.unpriced} positions have no price and are not in the total.` })
+      : null,
+
+    book.withoutCost
+      ? el("p", { class: "panel-note warn", text: ru()
+          ? `Позиций без цены входа: ${book.withoutCost}. Пока они есть, общая прибыль не считается.`
+          : `${book.withoutCost} positions have no cost basis, so the total profit is not shown.` })
+      : null,
+
+    el("p", { class: "panel-note", text: ru() ? PNL_NOTE.ru : PNL_NOTE.en }));
+}
+
 export function cryptoView() {
   const holdings = store.recordsOfType("crypto");
   const rates = store.getRates();
@@ -590,12 +682,10 @@ export function cryptoView() {
       : "This is not a promise in copy but a check in code: any attempt to save such a string is rejected in every field." })
   ]));
 
-  page.append(panel("records-panel",
-    panelHeader(ru() ? "ПОЗИЦИИ" : "HOLDINGS", ru() ? "Наблюдаемые активы" : "Observed holdings"),
-    recordList("crypto-holdings", holdings, {
-      empty: ru() ? "Добавьте монету и количество — цена подтянется сама." : "Add a coin and a quantity — the price is fetched for you.",
-      addType: "crypto"
-    })));
+  page.append(positionsPanel(holdings, ["crypto"],
+    ru() ? "ПОЗИЦИИ" : "HOLDINGS",
+    ru() ? "Добавьте монету и количество — цена подтянется сама." : "Add a coin and a quantity — the price is fetched for you.",
+    "crypto"));
 
   page.append(el("p", { class: "panel-note", text: ru()
     ? `Автоматическая цена доступна для: ${Object.keys(COINS).join(", ")}. Для остальных укажите оценку вручную.`

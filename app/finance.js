@@ -5,8 +5,9 @@
    a month of income and expenses could be entered and the totals stayed empty
    because the default status excluded them. Nothing is dropped in silence now. */
 
-import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-133445";
-import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-133445";
+import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-135217";
+import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-135217";
+import { quoteFor } from "./quotes.js?v=20260827-135217";
 
 export const EXCLUSION = {
   UNCONFIRMED: "unconfirmed",
@@ -31,6 +32,30 @@ export function valueInBase(record, base, rates) {
     }
     const converted = convertMinor(usdMinor, "USD", base, rates);
     return converted === null ? { minor: null, reason: EXCLUSION.NO_RATE } : { minor: converted };
+  }
+
+  /* A security is quantity times a published price, exactly like crypto. When
+     the price did not arrive, a hand-entered valuation still counts — but it
+     is marked manual so the screen can say the figure is not from the market. */
+  if (record.type === "security") {
+    const quote = quoteFor(record, rates);
+    const quantity = Number(record.quantity);
+
+    if (quote && Number.isFinite(quantity) && quantity > 0) {
+      const minorInQuoteCurrency = Math.round(quantity * quote.price * 100);
+      const converted = convertMinor(minorInQuoteCurrency, quote.currency, base, rates);
+      return converted === null
+        ? { minor: null, reason: EXCLUSION.NO_RATE }
+        : { minor: converted, quote };
+    }
+
+    if (record.amountMinor !== null && record.amountMinor !== undefined) {
+      const converted = convertMinor(record.amountMinor, record.currency || base, base, rates);
+      return converted === null
+        ? { minor: null, reason: EXCLUSION.NO_RATE }
+        : { minor: converted, manual: true };
+    }
+    return { minor: null, reason: EXCLUSION.NO_PRICE };
   }
 
   if (record.amountMinor === null || record.amountMinor === undefined) {

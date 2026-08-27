@@ -29,6 +29,7 @@ export const FIELD_COPY = {
 
   /* ---------------- which date is being asked for ---------------- */
   date: {
+    security:   c("Когда купили", "Bought on"),
     goal:       c("Начали копить", "Started saving"),
     account:     c("Остаток на дату", "Balance as of"),
     receivable:  c("Когда одолжили", "Lent on"),
@@ -71,6 +72,8 @@ export const FIELD_COPY = {
   },
 
   costBasis: {
+    security:   c("Сколько вложили", "Amount invested", "Всего потрачено на эту позицию", "Total spent on this position"),
+    crypto:     c("Сколько вложили", "Amount invested", "Всего потрачено на эту монету", "Total spent on this coin"),
     investment: c("Сколько вложили", "Amount invested", "Чтобы видеть прибыль", "So profit can be shown"),
     asset:      c("Цена покупки", "Purchase price", "Чтобы видеть, как изменилась стоимость", "So the change in value can be shown")
   },

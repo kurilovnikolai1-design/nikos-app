@@ -1,7 +1,8 @@
 /* Keeping the rate snapshot fresh, without ever blocking the interface. */
 
-import * as store from "./store.js?v=20260827-133445";
-import * as rates from "./rates.js?v=20260827-133445";
+import * as store from "./store.js?v=20260827-135217";
+import * as rates from "./rates.js?v=20260827-135217";
+import { fetchQuotes } from "./quotes.js?v=20260827-135217";
 
 let inFlight = null;
 
@@ -16,10 +17,31 @@ export async function refreshRates({ force = false } = {}) {
 
   const coins = [...new Set(store.recordsOfType("crypto").map((record) => record.coin).filter(Boolean))];
 
+  const securities = store.recordsOfType("security").filter((record) => record.ticker);
+
   inFlight = rates.refresh(current, { coins })
     .then(async ({ snapshot, problems, ok }) => {
       // Manual overrides are the owner's own numbers and always survive a refresh.
       snapshot.manual = { ...(current?.manual || {}), ...(snapshot.manual || {}) };
+
+      /* Share prices ride along with the currency refresh. A ticker that did
+         not answer keeps whatever was stored before rather than blanking the
+         whole portfolio, but its own entry is replaced when it does answer. */
+      if (securities.length) {
+        try {
+          const fetched = await fetchQuotes(securities, { apiKey: settings.quotesApiKey || "" });
+          snapshot.securities = { ...(current?.securities || {}), ...fetched.quotes };
+          snapshot.securitiesFetchedAt = fetched.fetchedAt;
+          if (fetched.missing.length) problems = [...(problems || []), `нет котировок: ${fetched.missing.join(", ")}`];
+        } catch (error) {
+          snapshot.securities = current?.securities || {};
+          problems = [...(problems || []), String(error?.message || error)];
+        }
+      } else {
+        snapshot.securities = current?.securities || {};
+        snapshot.securitiesFetchedAt = current?.securitiesFetchedAt || null;
+      }
+
       await store.setRates(snapshot);
       return { ok, problems };
     })

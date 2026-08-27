@@ -2,24 +2,26 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-133445";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-133445";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-135217";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-135217";
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-133445";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-133445";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-133445";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-133445";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-133445";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-133445";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-133445";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-133445";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-133445";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-133445";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-133445";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-133445";
-import { parseReport } from "./procedures.js?v=20260827-133445";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-133445";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-133445";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-135217";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-135217";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-135217";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-135217";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-135217";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-135217";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-135217";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-135217";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-135217";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-135217";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-135217";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-135217";
+import { parseReport } from "./procedures.js?v=20260827-135217";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-135217";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-135217";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-135217";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-135217";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -277,11 +279,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-133445")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-135217")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-133445")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-135217")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -290,14 +292,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-133445")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-135217")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-133445")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-135217")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -426,6 +428,76 @@ const overview = goalsOverview([
 check("архивные цели не показываются", !overview.some((item) => item.record.id === "g8"));
 check("собранные уходят вниз", overview.at(-1)?.record.id === "g7");
 check("общая нехватка суммируется", totalOutstanding(overview) === 10_000_00, String(totalOutstanding(overview)));
+
+/* ---------- Positions ---------- */
+
+/* The refusal that matters: a portfolio with one position missing its cost
+   must not report a profit, because value-minus-partial-cost is not one. */
+const coin = (over) => ({ type: "crypto", status: "confirmed", currency: "USD",
+                          deletedAt: null, linkedIds: [], ...over });
+
+const btc = positionPnl(coin({ id: "p1", coin: "BTC", quantity: 0.5, costBasisMinor: 20_000_00 }), "RUB", RATES);
+check("прибыль по позиции считается", btc.state === PNL_STATE.UP);
+check("вложенное переведено в рубли", btc.costMinor === Math.round(20_000_00 * 84.28), String(btc.costMinor));
+check("процент от вложенного", Math.abs(btc.pnlPercent - (btc.pnlMinor / btc.costMinor) * 100) < 1e-9);
+check("цена входа на единицу", btc.entryPriceMinor === Math.round(btc.costMinor / 0.5));
+
+const loss = positionPnl(coin({ id: "p2", coin: "ETH", quantity: 4, costBasisMinor: 14_000_00 }), "RUB", RATES);
+check("убыток опознан", loss.state === PNL_STATE.DOWN && loss.pnlMinor < 0);
+
+const noCost = positionPnl(coin({ id: "p3", coin: "BTC", quantity: 0.1 }), "RUB", RATES);
+check("без цены входа — не ноль, а состояние", noCost.state === PNL_STATE.NO_COST);
+check("но стоимость всё равно известна", noCost.valueMinor > 0);
+
+const gift = positionPnl(coin({ id: "p4", coin: "BTC", quantity: 0.1, costBasisMinor: 0 }), "RUB", RATES);
+check("нулевая цена входа не даёт бесконечности", gift.pnlPercent === null);
+
+const mixed = positionBook([
+  coin({ id: "m1", coin: "BTC", quantity: 0.5, costBasisMinor: 20_000_00 }),
+  coin({ id: "m2", coin: "BTC", quantity: 0.1 })
+], "RUB", RATES);
+check("неполный портфель не показывает прибыль", mixed.pnlMinor === null,
+      "стоимость минус часть затрат — это не прибыль");
+check("но говорит, скольких данных не хватает", mixed.withoutCost === 1);
+check("стоимость портфеля всё равно посчитана", mixed.valueMinor > 0);
+
+const complete = positionBook([
+  coin({ id: "m3", coin: "BTC", quantity: 0.5, costBasisMinor: 20_000_00 }),
+  coin({ id: "m4", coin: "ETH", quantity: 4, costBasisMinor: 14_000_00 })
+], "RUB", RATES);
+check("полный портфель показывает прибыль", complete.pnlMinor !== null);
+check("прибыль = стоимость минус затраты",
+      complete.pnlMinor === complete.valueMinor - complete.costMinor);
+
+/* ---------- Securities ---------- */
+
+const QUOTED = { ...RATES, securities: {
+  "moex:SBER": { ticker: "SBER", market: "moex", price: 270.07, currency: "RUB", name: "Сбербанк", live: true },
+  "foreign:AAPL": { ticker: "AAPL", market: "foreign", price: 232.5, currency: "USD", name: "AAPL", live: true }
+} };
+const paper = (over) => ({ type: "security", status: "confirmed", deletedAt: null, linkedIds: [], ...over });
+
+check("ключ котировки собирается из рынка и тикера",
+      quoteKey(paper({ ticker: "sber", market: "moex" })) === "moex:SBER");
+check("по умолчанию рынок — МосБиржа",
+      quoteKey(paper({ ticker: "GAZP" })) === "moex:GAZP");
+check("котировка находится", quoteFor(paper({ ticker: "SBER", market: MARKET.MOEX }), QUOTED)?.price === 270.07);
+
+const sber = positionPnl(paper({ id: "s1", ticker: "SBER", market: "moex", quantity: 100, costBasisMinor: 22_000_00, currency: "RUB" }), "RUB", QUOTED);
+check("бумага оценена по котировке", sber.valueMinor === Math.round(100 * 270.07 * 100), String(sber.valueMinor));
+check("прибыль по бумаге", sber.state === PNL_STATE.UP);
+
+const foreign = positionPnl(paper({ id: "s2", ticker: "AAPL", market: "foreign", quantity: 5, costBasisMinor: 900_00, currency: "USD" }), "RUB", QUOTED);
+check("иностранная бумага переведена в рубли",
+      foreign.valueMinor === Math.round(5 * 232.5 * 100 * 84.28), String(foreign.valueMinor));
+
+const unpriced = positionBook([
+  paper({ id: "s3", ticker: "SBER", market: "moex", quantity: 100, costBasisMinor: 22_000_00, currency: "RUB" }),
+  paper({ id: "s4", ticker: "XXXX", market: "moex", quantity: 5, costBasisMinor: 10_000_00, currency: "RUB" })
+], "RUB", QUOTED, ["security"]);
+check("бумага без котировки не ломает портфель", unpriced.valueMinor > 0);
+check("но посчитана отдельно", unpriced.unpriced === 1,
+      "иначе сумма молча относится к меньшему числу позиций, чем показано");
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

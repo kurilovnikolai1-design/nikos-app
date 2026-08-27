@@ -1,19 +1,19 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-133445";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-133445";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-133445";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-133445";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-133445";
-import * as lock from "../lock.js?v=20260827-133445";
-import * as persist from "../persist.js?v=20260827-133445";
-import * as store from "../store.js?v=20260827-133445";
-import * as records from "../records.js?v=20260827-133445";
-import * as cloud from "../cloud.js?v=20260827-133445";
-import * as notify from "../notify.js?v=20260827-133445";
-import { refreshRates } from "../main-rates.js?v=20260827-133445";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-133445";
-import { whoopRow } from "../whoop.js?v=20260827-133445";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-135217";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-135217";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-135217";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-135217";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-135217";
+import * as lock from "../lock.js?v=20260827-135217";
+import * as persist from "../persist.js?v=20260827-135217";
+import * as store from "../store.js?v=20260827-135217";
+import * as records from "../records.js?v=20260827-135217";
+import * as cloud from "../cloud.js?v=20260827-135217";
+import * as notify from "../notify.js?v=20260827-135217";
+import { refreshRates } from "../main-rates.js?v=20260827-135217";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-135217";
+import { whoopRow } from "../whoop.js?v=20260827-135217";
 
 const ru = () => getLocale() === "ru";
 
@@ -220,6 +220,25 @@ export function settingsView() {
                 el("span", { class: "switch-track", "aria-hidden": "true" })
               ])
             : el("small", { class: "form-hint", text: ru() ? "Браузер не поддерживает" : "Not supported here" })),
+
+        /* Optional by design: Russian tickers price themselves for free, and
+           foreign ones fall back to a hand-entered valuation without a key. */
+        settingRow("▤", ru() ? "Ключ для иностранных бумаг" : "Key for foreign tickers",
+          settings.quotesApiKey
+            ? (ru() ? "Ключ сохранён — иностранные бумаги оцениваются автоматически"
+                    : "Key saved — foreign tickers are priced automatically")
+            : (ru() ? "Бесплатный ключ Finnhub. Без него укажите цену вручную. Российские бумаги работают и так."
+                    : "A free Finnhub key. Without it, enter foreign prices by hand. Russian tickers work regardless."),
+          el("input", {
+            class: "form-control compact", type: "password", autocomplete: "off",
+            value: settings.quotesApiKey || "",
+            placeholder: ru() ? "не задан" : "not set",
+            onchange: async (event) => {
+              await store.updateSettings({ quotesApiKey: event.target.value.trim() });
+              toast(ru() ? "Сохранено" : "Saved", { tone: "success" });
+              refresh();
+            }
+          })),
 
         settingRow("⌛", t("money.rateSource"),
           rates?.fetchedAt
@@ -681,7 +700,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-133445");
+                       const suite = await import("../selftest.js?v=20260827-135217");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

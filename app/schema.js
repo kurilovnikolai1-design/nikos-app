@@ -148,11 +148,30 @@ export const TYPES = {
                  c("car_resale", "Сделка с перекупщиком", "Car-reseller deal"), c("brokerage", "Брокерская позиция", "Brokerage"),
                  c("business", "Инвестиция в бизнес", "Business"), c("deposit", "Вклад", "Deposit"), c("other", "Другое", "Other")]
   },
+  /* A share or bond position. Separate from "investment" on purpose: an
+     investment here is a stake in something — Jetlend, a business, a project —
+     valued by judgement, while a security has a ticker and a public price. Two
+     different things sharing one form produced a screen that could describe
+     neither well. */
+  security: {
+    view: "investments", icon: "▤", role: BALANCE_ROLE.ASSET,
+    title: { ru: "Бумага", en: "Security" },
+    plural: { ru: "Бумаги", en: "Securities" },
+    fields: ["name", "ticker", "market", "quantity", "costBasis", "currency", "category",
+             "date", "status", "owner", "source", "confidence", "linked", "details"],
+    statuses: ["unverified", "confirmed", "archived"],
+    defaultStatus: "confirmed",
+    categories: [c("share", "Акция", "Share"), c("bond", "Облигация", "Bond"),
+                 c("etf", "Фонд / ETF", "Fund or ETF"), c("other", "Другое", "Other")]
+  },
   crypto: {
     view: "crypto", icon: "₿", role: BALANCE_ROLE.ASSET, readOnly: true, valuedIn: "USD",
     title: { ru: "Криптоактив", en: "Crypto holding" },
     plural: { ru: "Крипто", en: "Crypto" },
-    fields: ["name", "coin", "quantity", "walletAddress", "category", "date", "status", "owner", "source", "confidence", "linked", "details"],
+    /* costBasis is what turns a holding into a position. Without it the app
+       can say how much crypto exists and not whether owning it went well,
+       which for someone who trades is the only question that matters. */
+    fields: ["name", "coin", "quantity", "costBasis", "currency", "walletAddress", "category", "date", "status", "owner", "source", "confidence", "linked", "details"],
     statuses: ["unverified", "confirmed", "archived"],
     defaultStatus: "unverified",
     categories: [c("wallet", "Публичный кошелёк", "Public wallet"), c("exchange", "Биржа (только чтение)", "Exchange read-only"), c("other", "Другое", "Other")]

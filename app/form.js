@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-133445";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-133445";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-133445";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-133445";
-import { COINS } from "./rates.js?v=20260827-133445";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-133445";
-import * as store from "./store.js?v=20260827-133445";
-import * as records from "./records.js?v=20260827-133445";
-import * as attachments from "./attachments.js?v=20260827-133445";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-135217";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-135217";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-135217";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-135217";
+import { COINS } from "./rates.js?v=20260827-135217";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-135217";
+import * as store from "./store.js?v=20260827-135217";
+import * as records from "./records.js?v=20260827-135217";
+import * as attachments from "./attachments.js?v=20260827-135217";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -194,6 +194,26 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
           class: "form-control", type: "text", inputmode: "decimal", value: draft.quantity ?? "",
           oninput: (event) => set("quantity", event.target.value.replace(",", ".").trim() || null)
         }), { error });
+
+      case "ticker":
+        return field(t("form.ticker"), el("input", {
+          class: "form-control", type: "text", value: draft.ticker || "",
+          placeholder: draft.market === "foreign" ? "AAPL" : "SBER",
+          oninput: (event) => set("ticker", event.target.value.toUpperCase().trim())
+        }), { hint: getLocale() === "ru"
+          ? "Российские бумаги оцениваются автоматически по данным МосБиржи"
+          : "Russian tickers are priced automatically from the Moscow Exchange", error });
+
+      case "market":
+        return field(t("form.market"), el("select", {
+          class: "form-control",
+          onchange: (event) => { set("market", event.target.value); render(); }
+        }, [
+          el("option", { value: "moex", selected: draft.market !== "foreign" ? "selected" : null,
+                         text: getLocale() === "ru" ? "МосБиржа" : "Moscow Exchange" }),
+          el("option", { value: "foreign", selected: draft.market === "foreign" ? "selected" : null,
+                         text: getLocale() === "ru" ? "Иностранная биржа" : "Foreign exchange" })
+        ]));
 
       case "walletAddress":
         return field(t("form.walletAddress"), el("input", {

@@ -1006,6 +1006,37 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .goal-row.behind .goal-track i { background: var(--warn); }
 .goal-note { color: var(--faint); font-size: var(--step-xs); line-height: 1.5; }
 
+/* A position reads top-down: what it is and what it is worth, then how it got
+   there, then the number that says whether it went well. */
+.position-list { display: grid; gap: 8px; }
+.position-row {
+  display: grid; gap: 4px; width: 100%; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  color: var(--text); cursor: pointer;
+}
+.position-row:hover { border-color: var(--accent); }
+.position-row.up { border-left-color: var(--good, #3e8e6e); }
+.position-row.down { border-left-color: var(--danger, #d9534f); }
+.position-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 4px 12px;
+}
+.position-head strong { font-size: var(--step-md); }
+.position-value { font-variant-numeric: tabular-nums; font-weight: 600; }
+.position-detail {
+  display: flex; flex-wrap: wrap; gap: 4px 14px;
+  font-size: var(--step-xs); color: var(--faint);
+}
+.position-pnl {
+  font-size: var(--step-sm); font-weight: 700;
+  font-variant-numeric: tabular-nums; white-space: pre;
+}
+.position-row.up .position-pnl { color: var(--good, #3e8e6e); }
+.position-row.down .position-pnl { color: var(--danger, #d9534f); }
+.position-pnl.muted { color: var(--faint); font-weight: 400; white-space: normal; }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
