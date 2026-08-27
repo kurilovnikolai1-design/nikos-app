@@ -1,17 +1,18 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-135827";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-140121";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-135827";
-import { formatMoney } from "../money.js?v=20260827-135827";
-import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-135827";
-import { buildAttention } from "../attention.js?v=20260827-135827";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-135827";
-import { openRecordForm } from "../form.js?v=20260827-135827";
-import { navigate } from "../router.js?v=20260827-135827";
-import * as store from "../store.js?v=20260827-135827";
-import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-135827";
-import * as records from "../records.js?v=20260827-135827";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-140121";
+import { formatMoney } from "../money.js?v=20260827-140121";
+import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-140121";
+import { buildAttention } from "../attention.js?v=20260827-140121";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-140121";
+import { openRecordForm } from "../form.js?v=20260827-140121";
+import { navigate } from "../router.js?v=20260827-140121";
+import * as store from "../store.js?v=20260827-140121";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-140121";
+import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-140121";
+import * as records from "../records.js?v=20260827-140121";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -217,13 +218,28 @@ function taskLine(task) {
     type: "checkbox", "aria-label": `${t("app.confirm")}: ${task.name}`,
     onchange: async () => {
       const result = await records.patchRecord(task.id, { status: "done" }, "record-updated");
-      if (result.ok) { toast(ru() ? "Задача выполнена" : "Task done", { tone: "success" }); refresh(); }
+      if (!result.ok) return;
+
+      /* A repeating task leaves the completed one alone and creates the next
+         beside it, so "когда я делал это в прошлый раз" stays answerable. */
+      const follow = nextTaskFrom(task, { blank: records.blankRecord });
+      if (follow) {
+        const saved = await records.saveRecord(follow);
+        toast(saved.ok
+          ? (ru() ? `Готово. Следующая — ${formatDate(follow.date, "medium")}` : `Done. Next on ${formatDate(follow.date, "medium")}`)
+          : (ru() ? "Готово, но повтор создать не удалось" : "Done, but the repeat could not be created"),
+          { tone: saved.ok ? "success" : "warn" });
+      } else {
+        toast(ru() ? "Задача выполнена" : "Task done", { tone: "success" });
+      }
+      refresh();
     }
   });
   row.append(box, el("span", { class: "checkmark", "aria-hidden": "true" }),
     el("span", { class: "task-text" }, [
       el("strong", { text: task.name }),
       el("small", { text: [categoryLabel("task", task.category),
+        isRepeating(task) ? frequencyLabel(task.frequency, getLocale()).toLowerCase() : null,
         task.date && task.date < records.today() ? relativeDays(task.date) : null].filter(Boolean).join(" · ") })
     ]),
     el("span", { class: "task-time", text: task.dueTime || (task.date === records.today() ? t("app.today") : relativeDays(task.date)) }));

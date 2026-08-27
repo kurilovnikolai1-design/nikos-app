@@ -59,7 +59,9 @@ export const TYPES = {
     view: "tasks", icon: "✓", role: BALANCE_ROLE.NONE,
     title: { ru: "Задача", en: "Task" },
     plural: { ru: "Задачи", en: "Tasks" },
-    fields: ["name", "category", "date", "dueTime", "status", "priority", "owner", "reminderDate", "linked", "details"],
+    /* A service, an insurance renewal, a meter reading. FREQUENCY existed in
+       this file from the rebuild and nothing used it — this is what it is for. */
+    fields: ["name", "category", "date", "dueTime", "frequency", "status", "priority", "owner", "reminderDate", "linked", "details"],
     statuses: ["planned", "waiting", "done", "overdue", "archived"],
     defaultStatus: "planned",
     categories: [c("personal", "Личное", "Personal"), c("finance", "Финансы", "Finance"), c("property", "Недвижимость", "Property"),

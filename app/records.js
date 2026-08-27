@@ -6,10 +6,10 @@
       localStorage and Supabase in one unconfirmed click.
    2. Nothing is saved until safety.inspectRecord() clears it. */
 
-import * as store from "./store.js?v=20260827-135827";
-import { inspectRecord } from "./safety.js?v=20260827-135827";
-import { parseAmount } from "./money.js?v=20260827-135827";
-import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-135827";
+import * as store from "./store.js?v=20260827-140121";
+import { inspectRecord } from "./safety.js?v=20260827-140121";
+import { parseAmount } from "./money.js?v=20260827-140121";
+import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-140121";
 
 export const TRASH_DAYS = 30;
 
@@ -61,6 +61,7 @@ export function blankRecord(type) {
     targetAmountMinor: null,
     ticker: null,
     sets: null,
+    frequency: null,
     market: null,
     targetDate: null,
     createdAt: new Date().toISOString(),

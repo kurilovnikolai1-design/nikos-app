@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-135827";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-135827";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-135827";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-135827";
-import { COINS } from "./rates.js?v=20260827-135827";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-135827";
-import * as store from "./store.js?v=20260827-135827";
-import * as records from "./records.js?v=20260827-135827";
-import * as attachments from "./attachments.js?v=20260827-135827";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-140121";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-140121";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-140121";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-140121";
+import { COINS } from "./rates.js?v=20260827-140121";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-140121";
+import * as store from "./store.js?v=20260827-140121";
+import * as records from "./records.js?v=20260827-140121";
+import * as attachments from "./attachments.js?v=20260827-140121";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -301,6 +301,24 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
         }, statusesOf(type).map((key) => option(key, statusLabel(key), key === draft.status))), {
           hint: statusHint()
         });
+
+      /* Empty is the default and stays first: most tasks happen once, and a
+         select that starts on "Еженедельно" would quietly repeat them all. */
+      case "frequency":
+        return field(t("form.frequency"), el("select", {
+          class: "form-control",
+          onchange: (event) => set("frequency", event.target.value || null)
+        }, [
+          el("option", { value: "", selected: draft.frequency ? null : "selected",
+                         text: getLocale() === "ru" ? "Не повторяется" : "Does not repeat" }),
+          ...Object.keys(FREQUENCY).map((key) =>
+            el("option", { value: key, selected: draft.frequency === key ? "selected" : null,
+                           text: frequencyLabel(key) }))
+        ]), { hint: draft.frequency
+          ? (getLocale() === "ru"
+              ? "Когда отметите выполненной, рядом появится следующая"
+              : "When you tick it off, the next one is created beside it")
+          : "" });
 
       case "priority":
         return field(t("form.priority"), selectFrom(PRIORITY, draft.priority, priorityLabel, (value) => set("priority", value)), {});

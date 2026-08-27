@@ -20,10 +20,10 @@
  * record on a given day is remembered, so reopening the app five times does
  * not produce five copies of the same nudge. */
 
-import * as store from "./store.js?v=20260827-135827";
-import * as cloud from "./cloud.js?v=20260827-135827";
-import { TYPES } from "./schema.js?v=20260827-135827";
-import { t, getLocale, formatDate } from "./i18n.js?v=20260827-135827";
+import * as store from "./store.js?v=20260827-140121";
+import * as cloud from "./cloud.js?v=20260827-140121";
+import { TYPES } from "./schema.js?v=20260827-140121";
+import { t, getLocale, formatDate } from "./i18n.js?v=20260827-140121";
 
 const SEEN_KEY = "nikos-notified";
 const ENABLED_KEY = "nikos-notify-enabled";
