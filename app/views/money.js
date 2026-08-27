@@ -1,16 +1,17 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog } from "../ui.js?v=20260827-130449";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-133115";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-130449";
-import { formatMoney, formatQuantity, CURRENCIES } from "../money.js?v=20260827-130449";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-130449";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-130449";
-import { isVerified } from "../schema.js?v=20260827-130449";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-130449";
-import { openRecordForm } from "../form.js?v=20260827-130449";
-import * as store from "../store.js?v=20260827-130449";
-import * as records from "../records.js?v=20260827-130449";
+         PLURALS, formatNumber, typeLabel } from "../i18n.js?v=20260827-133115";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-133115";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-133115";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-133115";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-133115";
+import { isVerified } from "../schema.js?v=20260827-133115";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh } from "../render.js?v=20260827-133115";
+import { openRecordForm } from "../form.js?v=20260827-133115";
+import * as store from "../store.js?v=20260827-133115";
+import * as records from "../records.js?v=20260827-133115";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -201,6 +202,106 @@ export function debtsView() {
 
 const cashflowState = { period: "month", offset: 0 };
 
+/* What is left to spend, and how long it has to last. */
+function budgetPanel() {
+  const status = budgetStatus(store.liveRecords(), base(), store.getRates(), store.getSettings());
+
+  if (status.state === BUDGET_STATE.UNSET) {
+    const suggestion = status.suggestion;
+    return panel("budget-panel",
+      panelHeader(ru() ? "БЮДЖЕТ НА МЕСЯЦ" : "MONTHLY BUDGET", ru() ? "Не задан" : "Not set"),
+      el("p", { class: "panel-note", text: ru()
+        ? "Поставьте предел на месяц — и вместо «потрачено столько-то» будет видно, сколько осталось и на сколько дней."
+        : "Set a monthly limit and the panel will show what is left and for how many days, instead of only what was spent." }),
+      suggestion
+        ? el("p", { class: "panel-note", text: ru()
+            ? `За последние ${suggestion.months} мес. вы тратили в среднем ${money(suggestion.averageMinor)} в месяц.`
+            : `Over the last ${suggestion.months} months you spent ${money(suggestion.averageMinor)} a month on average.` })
+        : null,
+      el("div", { class: "budget-actions" }, [
+        el("button", { class: "primary-button", type: "button",
+          text: ru() ? "Задать бюджет" : "Set a budget",
+          onclick: () => openBudgetDialog(suggestion?.averageMinor ?? null) })
+      ]));
+  }
+
+  const tone = status.state === BUDGET_STATE.OVER ? "negative"
+    : status.state === BUDGET_STATE.CLOSE ? "warn" : "positive";
+
+  return panel(`budget-panel ${tone}`,
+    panelHeader(ru() ? "ОСТАЛОСЬ ДО КОНЦА МЕСЯЦА" : "LEFT THIS MONTH",
+      ru() ? `${money(status.spentMinor)} из ${money(status.limitMinor)}` : `${money(status.spentMinor)} of ${money(status.limitMinor)}`,
+      el("button", { class: "text-button", type: "button", text: ru() ? "Изменить" : "Change",
+                     onclick: () => openBudgetDialog(status.limitMinor) })),
+
+    el("div", { class: "budget-headline" }, [
+      el("strong", { class: tone, text: money(status.remainingMinor) }),
+      el("small", { text: status.remainingMinor >= 0
+        ? (ru() ? `${money(status.perDayMinor)} в день на ${countOf(status.daysLeft, PLURALS.day)}`
+                : `${money(status.perDayMinor)} a day for ${status.daysLeft} days`)
+        : (ru() ? `Перерасход. До конца месяца ${countOf(status.daysLeft, PLURALS.day)}.`
+                : `Over budget, with ${status.daysLeft} days to go.`) })
+    ]),
+
+    el("div", { class: "budget-track", role: "presentation" }, [
+      el("i", { class: "budget-fill", style: `width:${Math.min(100, Math.round(status.share * 100))}%` }),
+      /* Where the month itself has got to — the only fair thing to compare
+         the spending against. */
+      el("b", { class: "budget-pace", style: `left:${Math.min(100, Math.round(status.expectedShare * 100))}%`,
+                title: ru() ? "Сегодняшний день месяца" : "Today within the month" })
+    ]),
+
+    status.ahead && status.remainingMinor >= 0
+      ? el("p", { class: "panel-note warn", text: ru()
+          ? `Потрачено ${Math.round(status.share * 100)}% бюджета, а месяц прошёл на ${Math.round(status.expectedShare * 100)}%.`
+          : `${Math.round(status.share * 100)}% of the budget is gone, and the month is ${Math.round(status.expectedShare * 100)}% through.` })
+      : null,
+
+    status.excludedCount
+      ? el("p", { class: "panel-note", text: ru()
+          ? `Не посчитано записей: ${status.excludedCount}. Реальный расход может быть больше.`
+          : `${status.excludedCount} records could not be counted, so the real figure may be higher.` })
+      : null,
+
+    el("p", { class: "panel-note", text: ru() ? BUDGET_NOTE.ru : BUDGET_NOTE.en }));
+}
+
+function openBudgetDialog(currentMinor) {
+  const input = el("input", {
+    class: "form-control", type: "text", inputmode: "decimal", "data-autofocus": "true",
+    value: currentMinor ? String(Math.round(currentMinor / 100)) : "",
+    placeholder: ru() ? "Например: 150000" : "e.g. 150000"
+  });
+
+  const dialog = openDialog({
+    title: ru() ? "Бюджет на месяц" : "Monthly budget",
+    subtitle: ru() ? "Сколько вы готовы тратить" : "How much you are willing to spend",
+    size: "form",
+    body: el("div", { class: "form-grid" }, [
+      el("label", { class: "form-field wide" }, [
+        el("span", { class: "form-label", text: `${ru() ? "Предел" : "Limit"}, ${base()}` }),
+        input
+      ]),
+      el("p", { class: "panel-note", text: ru()
+        ? "Пустое поле убирает бюджет. Предел ни на что не влияет, кроме этой панели — ничего не блокируется."
+        : "Leaving it empty removes the budget. The limit only drives this panel; nothing is blocked." })
+    ]),
+    footer: el("div", { class: "dialog-actions" }, [
+      el("button", { class: "ghost-button", type: "button", text: t("app.cancel"), onclick: () => dialog.close() }),
+      el("button", { class: "primary-button", type: "button", text: t("app.save"), onclick: save })
+    ])
+  });
+
+  async function save() {
+    const raw = input.value.trim();
+    const minor = raw ? parseAmount(raw, base()) : 0;
+    if (raw && minor === null) { toast(ru() ? "Не понял сумму" : "Could not read that amount", { tone: "warn" }); return; }
+    await store.updateSettings({ budgetMinor: minor || 0 });
+    dialog.close();
+    refresh();
+  }
+}
+
 export function cashflowView() {
   const all = store.liveRecords();
   const range = periodRange(cashflowState.period, cashflowState.offset);
@@ -241,6 +342,12 @@ export function cashflowView() {
     metricCard({ kicker: t("money.monthlyLoad"), value: money(recurring.expenseMinor),
                  note: `${recurring.active.length} ${ru() ? "обязательств" : "obligations"}` })
   ]));
+
+  /* Only for the current month: "осталось до конца месяца" means nothing when
+     the period bar is pointing at last March. */
+  if (cashflowState.period === "month" && cashflowState.offset === 0) {
+    page.append(budgetPanel());
+  }
 
   const note = exclusionNote(flow.excluded);
   if (note) {

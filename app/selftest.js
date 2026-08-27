@@ -2,21 +2,22 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-130449";
-import { assertSchemaIsSound } from "./schema.js?v=20260827-130449";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-130449";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-130449";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-130449";
-import { migrateRecord, migrateAll } from "./records.js?v=20260827-130449";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-130449";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-130449";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-130449";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-130449";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-130449";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-130449";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-130449";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-130449";
-import { parseReport } from "./procedures.js?v=20260827-130449";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-133115";
+import { assertSchemaIsSound } from "./schema.js?v=20260827-133115";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-133115";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, EXCLUSION } from "./finance.js?v=20260827-133115";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-133115";
+import { migrateRecord, migrateAll } from "./records.js?v=20260827-133115";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-133115";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-133115";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-133115";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-133115";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-133115";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-133115";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-133115";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-133115";
+import { parseReport } from "./procedures.js?v=20260827-133115";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend } from "./budget.js?v=20260827-133115";
 
 /* Kept in step with router.js — a type pointing at a view that does not exist
    is how records used to disappear. */
@@ -274,11 +275,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-130449")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-133115")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-130449")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-133115")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -287,14 +288,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-130449")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-133115")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-130449")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-133115")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -349,6 +350,40 @@ check("заключение всё равно прочитано", quiet.conclus
 const noise = parseReport("просто какой-то текст");
 check("из мусора ничего не выдумывается",
       noise.kind === null && noise.conclusion === null && noise.followUp === null);
+
+/* ---------- Budget ---------- */
+
+/* The rule that matters most: no limit means no limit. A budget must never be
+   inferred from spending and then reported as if the owner had set one. */
+const monthDay = (day) => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), day).toISOString().slice(0, 10);
+};
+const spending = [
+  { id: "b1", type: "expense", status: "confirmed", amountMinor: 4500000, currency: "RUB", date: monthDay(3) },
+  { id: "b2", type: "expense", status: "confirmed", amountMinor: 1200000, currency: "RUB", date: monthDay(9) },
+  { id: "b3", type: "expense", status: "unverified", amountMinor: 900000, currency: "RUB", date: monthDay(10) }
+];
+
+const noLimit = budgetStatus(spending, "RUB", RATES, {});
+check("без предела бюджет не выдумывается", noLimit.state === BUDGET_STATE.UNSET);
+check("но расход всё равно посчитан", noLimit.spentMinor === 5700000, String(noLimit.spentMinor));
+
+const within = budgetStatus(spending, "RUB", RATES, { budgetMinor: 10000000 });
+check("остаток считается верно", within.remainingMinor === 4300000, String(within.remainingMinor));
+check("в пределах лимита", within.state === BUDGET_STATE.UNDER);
+check("непосчитанное названо", within.excludedCount === 1,
+      "неподтверждённый расход обязан быть виден, иначе остаток врёт");
+
+const exceeded = budgetStatus(spending, "RUB", RATES, { budgetMinor: 5000000 });
+check("перерасход опознан", exceeded.state === BUDGET_STATE.OVER);
+check("остаток уходит в минус", exceeded.remainingMinor === -700000, String(exceeded.remainingMinor));
+
+const nearly = budgetStatus(spending, "RUB", RATES, { budgetMinor: 6000000 });
+check("у самого предела — отдельное состояние", nearly.state === BUDGET_STATE.CLOSE);
+
+check("пустая история не даёт среднего", typicalMonthlySpend([], "RUB", RATES) === null,
+      "месяц без записей — это несобранные данные, а не нулевые траты");
 
 /* ---------- Report ---------- */
 export const results = { failures, passed: failures.length === 0 };

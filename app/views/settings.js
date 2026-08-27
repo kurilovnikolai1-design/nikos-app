@@ -1,19 +1,19 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-130449";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-130449";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-130449";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-130449";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-130449";
-import * as lock from "../lock.js?v=20260827-130449";
-import * as persist from "../persist.js?v=20260827-130449";
-import * as store from "../store.js?v=20260827-130449";
-import * as records from "../records.js?v=20260827-130449";
-import * as cloud from "../cloud.js?v=20260827-130449";
-import * as notify from "../notify.js?v=20260827-130449";
-import { refreshRates } from "../main-rates.js?v=20260827-130449";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-130449";
-import { whoopRow } from "../whoop.js?v=20260827-130449";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-133115";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-133115";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-133115";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-133115";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-133115";
+import * as lock from "../lock.js?v=20260827-133115";
+import * as persist from "../persist.js?v=20260827-133115";
+import * as store from "../store.js?v=20260827-133115";
+import * as records from "../records.js?v=20260827-133115";
+import * as cloud from "../cloud.js?v=20260827-133115";
+import * as notify from "../notify.js?v=20260827-133115";
+import { refreshRates } from "../main-rates.js?v=20260827-133115";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-133115";
+import { whoopRow } from "../whoop.js?v=20260827-133115";
 
 const ru = () => getLocale() === "ru";
 
@@ -681,7 +681,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-130449");
+                       const suite = await import("../selftest.js?v=20260827-133115");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

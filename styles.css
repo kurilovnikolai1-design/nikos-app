@@ -951,6 +951,37 @@ button.metric-card:hover { border-color: var(--border-strong); }
 }
 .connection-bar[hidden] { display: none; }
 
+/* The budget panel. One number the size of a headline, because it answers a
+   question asked while standing in a shop. */
+.budget-headline { display: grid; gap: 4px; margin: 4px 0 14px; }
+.budget-headline strong {
+  font-size: clamp(1.75rem, 7vw, 2.25rem); font-weight: 800;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums;
+}
+.budget-headline strong.positive { color: var(--good, var(--accent)); }
+.budget-headline strong.warn { color: var(--warn); }
+.budget-headline strong.negative { color: var(--danger, #d9534f); }
+.budget-headline small { color: var(--faint); font-size: var(--step-xs); }
+
+.budget-track {
+  position: relative; height: 10px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); overflow: hidden;
+}
+.budget-fill {
+  display: block; height: 100%; border-radius: 999px;
+  background: var(--accent); transition: width .3s ease;
+}
+.budget-panel.warn .budget-fill { background: var(--warn); }
+.budget-panel.negative .budget-fill { background: var(--danger, #d9534f); }
+/* Where the month has got to — the fair comparison for the bar above it. */
+.budget-pace {
+  position: absolute; top: -3px; width: 2px; height: 16px;
+  background: var(--text); opacity: .55; border-radius: 1px;
+}
+.budget-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+
+@media (prefers-reduced-motion: reduce) { .budget-fill { transition: none; } }
+
 .analyte-chart {
   display: grid; gap: 6px; padding: 14px;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2);
