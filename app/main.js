@@ -1,29 +1,29 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-144942";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-145737";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-144942";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-144942";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-144942";
-import { buildAttention } from "./attention.js?v=20260827-144942";
-import { refresh, recordRow } from "./render.js?v=20260827-144942";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-144942";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-144942";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-144942";
-import * as lock from "./lock.js?v=20260827-144942";
-import * as persist from "./persist.js?v=20260827-144942";
-import * as store from "./store.js?v=20260827-144942";
-import * as records from "./records.js?v=20260827-144942";
-import * as cloud from "./cloud.js?v=20260827-144942";
-import * as notify from "./notify.js?v=20260827-144942";
-import * as attachments from "./attachments.js?v=20260827-144942";
-import * as backups from "./backups.js?v=20260827-144942";
-import * as whoop from "./whoop.js?v=20260827-144942";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-145737";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-145737";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-145737";
+import { buildAttention } from "./attention.js?v=20260827-145737";
+import { refresh, recordRow } from "./render.js?v=20260827-145737";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-145737";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-145737";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-145737";
+import * as lock from "./lock.js?v=20260827-145737";
+import * as persist from "./persist.js?v=20260827-145737";
+import * as store from "./store.js?v=20260827-145737";
+import * as records from "./records.js?v=20260827-145737";
+import * as cloud from "./cloud.js?v=20260827-145737";
+import * as notify from "./notify.js?v=20260827-145737";
+import * as attachments from "./attachments.js?v=20260827-145737";
+import * as backups from "./backups.js?v=20260827-145737";
+import * as whoop from "./whoop.js?v=20260827-145737";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-144942";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-144942";
-import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-144942";
-import { settingsView } from "./views/settings.js?v=20260827-144942";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-145737";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-145737";
+import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-145737";
+import { settingsView } from "./views/settings.js?v=20260827-145737";
 
 const ru = () => getLocale() === "ru";
 

@@ -1,21 +1,22 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-144942";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-145737";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-144942";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-144942";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-144942";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-144942";
-import { refreshRates } from "../main-rates.js?v=20260827-144942";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-144942";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-144942";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-144942";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-144942";
-import { isVerified } from "../schema.js?v=20260827-144942";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-144942";
-import { openRecordForm } from "../form.js?v=20260827-144942";
-import * as store from "../store.js?v=20260827-144942";
-import * as records from "../records.js?v=20260827-144942";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-145737";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-145737";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor } from "../finance.js?v=20260827-145737";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-145737";
+import { refreshRates } from "../main-rates.js?v=20260827-145737";
+import { openBankImport } from "../csv.js?v=20260827-145737";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-145737";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-145737";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-145737";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-145737";
+import { isVerified } from "../schema.js?v=20260827-145737";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-145737";
+import { openRecordForm } from "../form.js?v=20260827-145737";
+import * as store from "../store.js?v=20260827-145737";
+import * as records from "../records.js?v=20260827-145737";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -438,7 +439,10 @@ export function cashflowView() {
 
   page.append(pageHeading(t("view.cashflow"),
     ru() ? "Что пришло, что ушло и что уходит каждый месяц." : "What came in, what went out, and what leaves every month.",
-    [addButton("income", typeLabel("income"), refresh, "ghost-button"),
+    [el("button", { class: "ghost-button", type: "button",
+                    text: ru() ? "Импорт выписки" : "Import a statement",
+                    onclick: () => openBankImport({ onDone: refresh }) }),
+     addButton("income", typeLabel("income"), refresh, "ghost-button"),
      addButton("expense", typeLabel("expense"), refresh, "primary-button")]));
 
   page.append(el("div", { class: "period-bar" }, [
@@ -647,13 +651,13 @@ export function investmentsView() {
 /* A position, not just a holding: what it is worth, what it cost, and the
    difference. Shared between crypto and securities because the two differ
    only in where the price comes from. */
-function positionsPanel(records, types, title, emptyText, addType) {
-  const book = portfolio(records, base(), store.getRates(), types);
+function positionsPanel(holdings, types, title, emptyText, addType) {
+  const book = portfolio(holdings, base(), store.getRates(), types);
 
-  if (!records.length) {
+  if (!holdings.length) {
     return panel("records-panel",
       panelHeader(title, ru() ? "Наблюдаемые активы" : "Observed holdings"),
-      recordList(`${addType}-holdings`, records, { empty: emptyText, addType }));
+      recordList(`${addType}-holdings`, holdings, { empty: emptyText, addType }));
   }
 
   const sign = (minor) => `${minor > 0 ? "+" : ""}${money(minor)}`;

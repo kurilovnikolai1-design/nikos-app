@@ -1158,6 +1158,26 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .doctor-line span { font-size: var(--step-sm); font-variant-numeric: tabular-nums; }
 .doctor-line small { color: var(--faint); font-size: var(--step-xs); line-height: 1.45; }
 
+/* Bank rows, before they become records. */
+.bank-rows { display: grid; gap: 2px; max-height: 320px; overflow-y: auto; margin-top: 12px; }
+.bank-row {
+  display: grid; align-items: center; gap: 4px 10px;
+  grid-template-columns: auto 5.5rem minmax(0, 1fr) auto;
+  padding: 7px 8px; border-radius: var(--radius-sm); cursor: pointer;
+}
+.bank-row:hover { background: var(--surface-2); }
+.bank-date { font-size: var(--step-xs); color: var(--faint); font-variant-numeric: tabular-nums; }
+.bank-name { font-size: var(--step-xs); overflow-wrap: anywhere; }
+.bank-row b { font-size: var(--step-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bank-row.expense b { color: var(--danger, #d9534f); }
+.bank-row.income b { color: var(--good, #3e8e6e); }
+
+@media (max-width: 480px) {
+  .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .bank-date { grid-column: 2; }
+  .bank-name { grid-column: 2; }
+}
+
 /* Printing the sheet must print the sheet, not the app around it. */
 @media print {
   body > *:not(.dialog-backdrop) { display: none !important; }

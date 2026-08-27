@@ -6,10 +6,10 @@
       localStorage and Supabase in one unconfirmed click.
    2. Nothing is saved until safety.inspectRecord() clears it. */
 
-import * as store from "./store.js?v=20260827-144942";
-import { inspectRecord } from "./safety.js?v=20260827-144942";
-import { parseAmount } from "./money.js?v=20260827-144942";
-import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-144942";
+import * as store from "./store.js?v=20260827-145737";
+import { inspectRecord } from "./safety.js?v=20260827-145737";
+import { parseAmount } from "./money.js?v=20260827-145737";
+import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-145737";
 
 export const TRASH_DAYS = 30;
 
@@ -174,6 +174,32 @@ export async function confirmMany(ids) {
   }), "record-confirmed");
   if (result.ok) store.pushAudit({ action: "confirmed", name: String(ids.length) });
   return result;
+}
+
+/* Many records in one write.
+ *
+ * Saving two hundred imported rows one at a time means two hundred writes to
+ * storage and two hundred re-renders, and a failure halfway leaves half a
+ * statement imported. One commit either takes all of them or none. */
+export async function saveMany(drafts, reason = "records-imported") {
+  const stamp = new Date().toISOString();
+  const prepared = [];
+
+  for (const draft of drafts) {
+    const record = { ...draft, name: String(draft.name || "").trim() || defaultName(draft), updatedAt: stamp };
+    const { errors, unsafe } = validate(record);
+    /* One bad row must not sink the import, but it must be reported. */
+    if (errors.length || unsafe.length) continue;
+    prepared.push(record);
+  }
+
+  if (!prepared.length) return { ok: false, reason: "nothing-valid", saved: 0, rejected: drafts.length };
+
+  const result = await store.commit((existing) => existing.concat(prepared), reason);
+  if (result.ok) {
+    store.pushAudit({ action: "imported", type: prepared[0].type, recordId: "—", name: String(prepared.length) });
+  }
+  return { ...result, saved: prepared.length, rejected: drafts.length - prepared.length };
 }
 
 export async function patchRecord(id, patch, reason = "record-updated") {

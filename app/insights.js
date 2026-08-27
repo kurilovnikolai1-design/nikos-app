@@ -13,9 +13,9 @@
       about someone's body are exactly what this must not produce.
    2. Every claim carries its sample size, so the owner can weigh it himself. */
 
-import { metricOf } from "./health-days.js?v=20260827-144942";
-import { isLive } from "./schema.js?v=20260827-144942";
-import { formatNumber, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-144942";
+import { metricOf } from "./health-days.js?v=20260827-145737";
+import { isLive } from "./schema.js?v=20260827-145737";
+import { formatNumber, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-145737";
 
 const MIN_SAMPLE = 8;          // days on each side of any comparison
 const MIN_TREND_MONTHS = 3;
