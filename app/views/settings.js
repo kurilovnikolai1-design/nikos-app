@@ -1,18 +1,19 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-121326";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-121326";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-121326";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-121326";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-121326";
-import * as lock from "../lock.js?v=20260827-121326";
-import * as persist from "../persist.js?v=20260827-121326";
-import * as store from "../store.js?v=20260827-121326";
-import * as records from "../records.js?v=20260827-121326";
-import * as cloud from "../cloud.js?v=20260827-121326";
-import { refreshRates } from "../main-rates.js?v=20260827-121326";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-121326";
-import { whoopRow } from "../whoop.js?v=20260827-121326";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-121904";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-121904";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-121904";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-121904";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-121904";
+import * as lock from "../lock.js?v=20260827-121904";
+import * as persist from "../persist.js?v=20260827-121904";
+import * as store from "../store.js?v=20260827-121904";
+import * as records from "../records.js?v=20260827-121904";
+import * as cloud from "../cloud.js?v=20260827-121904";
+import * as notify from "../notify.js?v=20260827-121904";
+import { refreshRates } from "../main-rates.js?v=20260827-121904";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-121904";
+import { whoopRow } from "../whoop.js?v=20260827-121904";
 
 const ru = () => getLocale() === "ru";
 
@@ -175,6 +176,50 @@ export function settingsView() {
             }),
             el("span", { class: "switch-track", "aria-hidden": "true" })
           ])),
+
+        /* Reminders leaving the screen. The permission is requested here and
+           only here, on a deliberate tap: a browser refused once never asks
+           again, so it must never be triggered by merely opening the app. */
+        settingRow("🔔", ru() ? "Напоминания" : "Reminders",
+          notify.permission() === "denied"
+            ? (ru() ? "Уведомления запрещены в настройках браузера — снимите запрет там"
+                    : "Notifications are blocked in the browser — allow them there first")
+            : (ru() ? "Напомнить о платеже, сроке документа, пересдаче анализа"
+                    : "Payments, expiring documents, tests to retake"),
+          notify.isSupported()
+            ? el("label", { class: "switch" }, [
+                el("input", {
+                  type: "checkbox",
+                  checked: notify.isEnabled() && notify.permission() === "granted" ? "checked" : null,
+                  disabled: notify.permission() === "denied" ? "disabled" : null,
+                  onchange: async (event) => {
+                    if (!event.target.checked) {
+                      notify.setEnabled(false);
+                      await notify.unsubscribePush();
+                      refresh();
+                      return;
+                    }
+                    const result = await notify.requestPermission();
+                    if (result !== "granted") {
+                      toast(ru() ? "Браузер не разрешил уведомления" : "The browser did not allow notifications",
+                            { tone: "warn" });
+                    } else {
+                      /* With the cloud connected the device also registers for
+                         push, which is the only way a reminder arrives with the
+                         app closed. Without it, local notifications still work. */
+                      if (notify.canPush()) await notify.subscribePush();
+                      const done = await notify.showDue();
+                      toast(done.shown
+                        ? (ru() ? `Показано напоминаний: ${done.shown}` : `${done.shown} reminders shown`)
+                        : (ru() ? "Включено. Сейчас напоминать не о чем." : "On. Nothing is due right now."),
+                        { tone: "success" });
+                    }
+                    refresh();
+                  }
+                }),
+                el("span", { class: "switch-track", "aria-hidden": "true" })
+              ])
+            : el("small", { class: "form-hint", text: ru() ? "Браузер не поддерживает" : "Not supported here" })),
 
         settingRow("⌛", t("money.rateSource"),
           rates?.fetchedAt
@@ -626,7 +671,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-121326");
+                       const suite = await import("../selftest.js?v=20260827-121904");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

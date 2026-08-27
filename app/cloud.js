@@ -5,9 +5,9 @@
    merged by updatedAt, and a delete is synced as a soft delete so a device
    that has been offline cannot resurrect a removed record. */
 
-import { t, getLocale } from "./i18n.js?v=20260827-121326";
-import * as store from "./store.js?v=20260827-121326";
-import { migrateRecord } from "./records.js?v=20260827-121326";
+import { t, getLocale } from "./i18n.js?v=20260827-121904";
+import * as store from "./store.js?v=20260827-121904";
+import { migrateRecord } from "./records.js?v=20260827-121904";
 
 const CONFIG_KEY = "nikos-cloud-config";
 const CONSENT_KEY = "nikos-cloud-consent";
@@ -49,7 +49,7 @@ function loadLibrary() {
   if (libraryPromise) return libraryPromise;
   libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "vendor/supabase.js?v=20260827-121326";
+    script.src = "vendor/supabase.js?v=20260827-121904";
     script.async = true;
     script.onload = () => (globalThis.supabase?.createClient ? resolve(globalThis.supabase) : reject(new Error("supabase missing")));
     script.onerror = () => reject(new Error("supabase failed to load"));
@@ -222,6 +222,25 @@ export const pendingCount = () => {
 };
 
 export const lastPushedAt = () => watermark() || null;
+
+/* ---------- Devices that can be reached when the app is shut ---------- */
+
+const PUSH_TABLE = "nikos_push_subscriptions";
+
+export async function savePushSubscription(subscription) {
+  if (!isConnected() || !hasConsent()) return { ok: false, message: "not connected" };
+  const { error } = await client.from(PUSH_TABLE).upsert(
+    [{ ...subscription, user_id: user.id }], { onConflict: "user_id,endpoint" });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
+export async function deletePushSubscription(endpoint) {
+  if (!isConnected()) return { ok: true };
+  const { error } = await client.from(PUSH_TABLE)
+    .delete().eq("user_id", user.id).eq("endpoint", endpoint);
+  return error ? { ok: false, message: error.message } : { ok: true };
+}
 
 export async function pushRecord(record) {
   if (!isConnected() || !hasConsent()) return { ok: true, skipped: true };

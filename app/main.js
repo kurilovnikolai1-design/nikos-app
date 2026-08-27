@@ -1,26 +1,27 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-121326";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-121904";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-121326";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-121326";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-121326";
-import { buildAttention } from "./attention.js?v=20260827-121326";
-import { refresh, recordRow } from "./render.js?v=20260827-121326";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-121326";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-121326";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-121326";
-import * as lock from "./lock.js?v=20260827-121326";
-import * as persist from "./persist.js?v=20260827-121326";
-import * as store from "./store.js?v=20260827-121326";
-import * as records from "./records.js?v=20260827-121326";
-import * as cloud from "./cloud.js?v=20260827-121326";
-import * as whoop from "./whoop.js?v=20260827-121326";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-121904";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-121904";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-121904";
+import { buildAttention } from "./attention.js?v=20260827-121904";
+import { refresh, recordRow } from "./render.js?v=20260827-121904";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-121904";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-121904";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-121904";
+import * as lock from "./lock.js?v=20260827-121904";
+import * as persist from "./persist.js?v=20260827-121904";
+import * as store from "./store.js?v=20260827-121904";
+import * as records from "./records.js?v=20260827-121904";
+import * as cloud from "./cloud.js?v=20260827-121904";
+import * as notify from "./notify.js?v=20260827-121904";
+import * as whoop from "./whoop.js?v=20260827-121904";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-121326";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-121326";
-import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-121326";
-import { settingsView } from "./views/settings.js?v=20260827-121326";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-121904";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-121904";
+import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-121904";
+import { settingsView } from "./views/settings.js?v=20260827-121904";
 
 const ru = () => getLocale() === "ru";
 
@@ -423,6 +424,12 @@ async function boot() {
     if (document.visibilityState === "hidden") cloud.flushPush();
   });
   window.addEventListener("pagehide", () => cloud.flushPush());
+
+  /* Reminders speak up when the app opens and when it returns to the
+     foreground. Nothing is asked of the browser until the owner turns it on
+     in settings — a permission prompt on first load gets refused, and a
+     refusal is permanent. */
+  notify.watch();
 
   onNavigate(() => render());
   onLocaleChange(() => { document.documentElement.lang = getLocale(); buildShell(); applyTheme(store.getSettings().theme); render(); });

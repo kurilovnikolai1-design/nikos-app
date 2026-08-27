@@ -17,7 +17,7 @@
    online; offline still works because every response is cached on the way
    through. BUILD is stamped at publish time, which also purges old caches. */
 
-const BUILD = "20260827-121326";
+const BUILD = "20260827-121904";
 const CACHE = `nikos-shell-${BUILD}`;
 
 const APP_SHELL = [
@@ -55,6 +55,7 @@ const APP_SHELL = [
   "./app/conditions.js",
   "./app/resolved.js",
   "./app/attachments.js",
+  "./app/notify.js",
   "./app/lab-descriptions.js",
   "./app/cloud.js",
   "./app/whoop.js",
@@ -118,4 +119,43 @@ self.addEventListener("fetch", (event) => {
       return cached || Response.error();
     }
   })());
+});
+
+/* ---------- Reminders ---------- */
+
+/* Tapping a notification should land on the screen it is about, and should
+   reuse the window that is already open rather than stacking up new ones. */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const view = event.notification.data?.view || "command";
+  const target = new URL(`./#/${view}`, self.location.href).href;
+
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clients) {
+      if (client.url.startsWith(self.location.origin) && "focus" in client) {
+        await client.focus();
+        if ("navigate" in client) { try { await client.navigate(target); } catch { /* focus is enough */ } }
+        return;
+      }
+    }
+    if (self.clients.openWindow) await self.clients.openWindow(target);
+  })());
+});
+
+/* Web Push, for when the app is closed entirely. Only fires if a server is
+   configured to send; without one this listener simply never runs. */
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch { payload = {}; }
+
+  const title = payload.title || "Nik'Os";
+  const options = {
+    body: payload.body || "",
+    tag: payload.tag || "nikos-push",
+    icon: "./nikos-icon.svg",
+    badge: "./nikos-icon.svg",
+    data: { view: payload.view || "command" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
 });
