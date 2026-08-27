@@ -5,9 +5,9 @@
    merged by updatedAt, and a delete is synced as a soft delete so a device
    that has been offline cannot resurrect a removed record. */
 
-import { t, getLocale } from "./i18n.js?v=20260827-073228";
-import * as store from "./store.js?v=20260827-073228";
-import { migrateRecord } from "./records.js?v=20260827-073228";
+import { t, getLocale } from "./i18n.js?v=20260827-081615";
+import * as store from "./store.js?v=20260827-081615";
+import { migrateRecord } from "./records.js?v=20260827-081615";
 
 const CONFIG_KEY = "nikos-cloud-config";
 const CONSENT_KEY = "nikos-cloud-consent";
@@ -48,7 +48,7 @@ function loadLibrary() {
   if (libraryPromise) return libraryPromise;
   libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "vendor/supabase.js?v=20260827-073228";
+    script.src = "vendor/supabase.js?v=20260827-081615";
     script.async = true;
     script.onload = () => (globalThis.supabase?.createClient ? resolve(globalThis.supabase) : reject(new Error("supabase missing")));
     script.onerror = () => reject(new Error("supabase failed to load"));
@@ -166,13 +166,25 @@ export async function syncAll() {
   if (!isConnected() || !hasConsent()) return { ok: false, skipped: true };
   announce("syncing");
 
-  const remote = await client.from(TABLE).select("record_id,payload,updated_at");
-  if (remote.error) { announce("error", remote.error.message); return { ok: false, message: remote.error.message }; }
+  /* Supabase answers a select with at most a thousand rows. A year of WHOOP
+     history is far more than that, so an unpaged read silently returned a
+     fraction and the rest never reached the device. Page until exhausted. */
+  const PAGE = 1000;
+  const rows = [];
+  for (let from = 0; ; from += PAGE) {
+    const page = await client.from(TABLE)
+      .select("record_id,payload,updated_at")
+      .order("record_id", { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (page.error) { announce("error", page.error.message); return { ok: false, message: page.error.message }; }
+    rows.push(...(page.data || []));
+    if ((page.data || []).length < PAGE) break;
+  }
 
   const merged = new Map(store.allRecords().map((record) => [record.id, record]));
   let pulled = 0;
 
-  for (const row of remote.data || []) {
+  for (const row of rows) {
     /* A device that has not been updated yet can still be pushing records in
        the old shape. They were being adopted verbatim, which recreated exactly
        the orphan-record problem the rebuild removed — a debt/"other" arriving
@@ -189,13 +201,25 @@ export async function syncAll() {
   const written = await store.commit(() => union, "cloud-sync");
   if (!written.ok) { announce("error", written.reason); return { ok: false, message: written.reason }; }
 
-  if (union.length) {
-    const { error } = await client.from(TABLE).upsert(union.map(toRow), { onConflict: "user_id,record_id" });
+  /* Push back only what the cloud does not already have. Re-uploading every
+     record on every sync meant a megabytes-large request that grows with the
+     history — slow on a phone and liable to fail outright. */
+  const remoteIds = new Set(rows.map((row) => row.record_id));
+  const remoteTime = new Map(rows.map((row) => [row.record_id, new Date(row.payload?.updatedAt || row.updated_at || 0).getTime()]));
+  const toPush = union.filter((record) => {
+    if (!remoteIds.has(record.id)) return true;
+    return new Date(record.updatedAt || 0).getTime() > (remoteTime.get(record.id) ?? 0);
+  });
+
+  const CHUNK = 250;
+  for (let index = 0; index < toPush.length; index += CHUNK) {
+    const slice = toPush.slice(index, index + CHUNK);
+    const { error } = await client.from(TABLE).upsert(slice.map(toRow), { onConflict: "user_id,record_id" });
     if (error) { announce("error", error.message); return { ok: false, message: error.message }; }
   }
 
   announce("connected");
-  return { ok: true, pulled, pushed: union.length };
+  return { ok: true, pulled, pushed: toPush.length, total: union.length };
 }
 
 /* The WHOOP integration needs the owner's Supabase session to prove who is

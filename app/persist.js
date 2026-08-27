@@ -5,7 +5,7 @@
    "Запись сохранена". Every write here returns an explicit result, and the
    caller is required to surface a failure. */
 
-import * as lock from "./lock.js?v=20260827-073228";
+import * as lock from "./lock.js?v=20260827-081615";
 
 export const VAULT_KEY = "nikos-vault";
 export const META_KEY = "nikos-vault-meta";
@@ -19,6 +19,41 @@ export const RESULT = {
   UNAVAILABLE: "unavailable",
   FAILED: "failed"
 };
+
+/* A record carries about forty-five fields and a typical one fills seventeen.
+   Writing the empty ones out doubled what a year of WHOOP history costs in the
+   browser — three megabytes against a five megabyte ceiling, which is not a
+   margin to rely on. Empty values are dropped on the way to disk and restored
+   on the way back, so nothing above this layer ever sees a different shape. */
+const RECORD_DEFAULTS = {
+  category: "other", name: "", counterparty: "", amountMinor: null, costBasisMinor: null,
+  currency: "RUB", quantity: null, coin: "", walletAddress: "", value: null, unit: "",
+  refLow: null, refHigh: null, duration: null, distance: null, intensity: null, feeling: null,
+  date: null, dueTime: "", dueDate: null, endDate: null, expiresAt: null, status: "unverified",
+  priority: "medium", terms: "", rate: null, owner: "me", progress: null, ownershipPercent: null,
+  source: "", confidence: "medium", reminderDate: null, linkedIds: [], recurring: false,
+  frequency: "monthly", nextDueDate: null, contact: "", reasoning: "", details: "",
+  attachment: null, deletedAt: null
+};
+
+const isEmptyValue = (value) =>
+  value === null || value === undefined || value === ""
+  || (Array.isArray(value) && value.length === 0);
+
+const shrink = (record) => {
+  const slim = {};
+  for (const [key, value] of Object.entries(record)) {
+    if (isEmptyValue(value)) continue;
+    if (value === false && key in RECORD_DEFAULTS) continue;   // false is the default everywhere it appears
+    slim[key] = value;
+  }
+  return slim;
+};
+
+const expand = (record) => ({ ...RECORD_DEFAULTS, ...record, linkedIds: record.linkedIds ?? [] });
+
+export const compactRecords = (records) => records.map(shrink);
+export const expandRecords = (records) => records.map(expand);
 
 export const emptyVault = () => ({
   version: 3,
@@ -103,7 +138,7 @@ function normalise(value) {
   return {
     ...base,
     ...value,
-    records: Array.isArray(value.records) ? value.records : [],
+    records: Array.isArray(value.records) ? expandRecords(value.records) : [],
     audit: Array.isArray(value.audit) ? value.audit : [],
     settings: value.settings && typeof value.settings === "object" ? value.settings : {}
   };
@@ -137,7 +172,11 @@ export function clearLegacy() {
 /* ---------- Saving ---------- */
 
 export async function save(vault) {
-  const payload = JSON.stringify({ ...vault, savedAt: new Date().toISOString() });
+  const payload = JSON.stringify({
+    ...vault,
+    records: compactRecords(vault.records || []),
+    savedAt: new Date().toISOString()
+  });
 
   if (lock.hasSessionKey()) {
     let envelope;

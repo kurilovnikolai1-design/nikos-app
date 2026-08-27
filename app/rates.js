@@ -7,7 +7,7 @@
 
    Only public rate endpoints are contacted. No record ever leaves the device. */
 
-import { CURRENCY_CODES } from "./money.js?v=20260827-073228";
+import { CURRENCY_CODES } from "./money.js?v=20260827-081615";
 
 export const SOURCES = {
   cbr: { id: "cbr", ru: "ЦБ РФ", en: "Bank of Russia", url: "https://www.cbr-xml-daily.ru/daily_json.js" },
