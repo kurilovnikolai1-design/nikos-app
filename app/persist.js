@@ -5,7 +5,7 @@
    "Запись сохранена". Every write here returns an explicit result, and the
    caller is required to surface a failure. */
 
-import * as lock from "./lock.js?v=20260827-055925";
+import * as lock from "./lock.js?v=20260827-061621";
 
 export const VAULT_KEY = "nikos-vault";
 export const META_KEY = "nikos-vault-meta";

@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-055925";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-061621";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
