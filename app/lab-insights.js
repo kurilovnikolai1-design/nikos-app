@@ -9,8 +9,8 @@
  *
  * Every range used is the laboratory's own. Nik'Os has none of its own. */
 
-import { byAnalyte, rangeVerdict } from "./labs-parse.js?v=20260827-130123";
-import { formatNumber, formatDate as formatDateRaw, plural } from "./i18n.js?v=20260827-130123";
+import { byAnalyte, rangeVerdict } from "./labs-parse.js?v=20260827-130449";
+import { formatNumber, formatDate as formatDateRaw, plural } from "./i18n.js?v=20260827-130449";
 
 /* A Russian medium date already ends in "г."; appending a sentence period
    produced "17 нояб. 2017 г..". */

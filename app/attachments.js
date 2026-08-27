@@ -15,8 +15,8 @@
  * vault is not — or the reverse — would be a promise broken in one direction
  * or a nuisance in the other. */
 
-import * as idb from "./idb.js?v=20260827-130123";
-import * as lock from "./lock.js?v=20260827-130123";
+import * as idb from "./idb.js?v=20260827-130449";
+import * as lock from "./lock.js?v=20260827-130449";
 
 const PREFIX = "file:";
 
@@ -51,11 +51,62 @@ function fromBase64(text) {
   return bytes.buffer;
 }
 
+/* ---------- Photographs ---------- */
+
+/* A phone camera produces an 8 MB photograph of a sheet of A4. Stored as-is,
+   a dozen of them cost more than every record in the vault put together — and
+   none of that size is legibility, it is sensor noise. Shrinking to something
+   a document scan actually needs keeps the page readable and the storage
+   grant intact.
+ *
+ * Only photographs. A PDF is already compressed and a scan inside one is
+ * often the only legible copy, so those are stored byte for byte. */
+
+const PHOTO_TYPES = /^image\/(jpeg|png|webp|heic|heif)$/i;
+const MAX_EDGE = 2200;          /* enough to read printed text on A4 */
+const QUALITY = 0.82;
+
+async function shrinkPhoto(file) {
+  if (!PHOTO_TYPES.test(file.type)) return file;
+  if (file.size < 400 * 1024) return file;
+  if (typeof createImageBitmap !== "function" || typeof OffscreenCanvas === "undefined") return file;
+
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+
+    /* Already small enough in pixels: re-encoding would only lose detail. */
+    if (scale === 1 && file.type === "image/jpeg") { bitmap.close?.(); return file; }
+
+    const width = Math.round(bitmap.width * scale);
+    const height = Math.round(bitmap.height * scale);
+    const canvas = new OffscreenCanvas(width, height);
+    const context = canvas.getContext("2d");
+    context.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close?.();
+
+    const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: QUALITY });
+
+    /* If the "compressed" version is not smaller, keep the original. */
+    if (blob.size >= file.size) return file;
+
+    const name = file.name.replace(/\.(png|webp|heic|heif)$/i, ".jpg");
+    return new File([blob], name, { type: "image/jpeg", lastModified: file.lastModified });
+  } catch {
+    /* Any failure means store what the owner actually chose. */
+    return file;
+  }
+}
+
 /* Store one file and return the descriptor that belongs on the record. */
-export async function saveFile(file) {
-  if (!file) return { result: RESULT.FAILED };
-  if (file.size > MAX_BYTES) return { result: RESULT.TOO_LARGE, limit: MAX_BYTES };
+export async function saveFile(original) {
+  if (!original) return { result: RESULT.FAILED };
   if (!idb.isSupported()) return { result: RESULT.NO_STORAGE };
+
+  /* Shrink first, then check the limit: a photograph over the limit usually
+     fits comfortably once it is no longer a raw camera file. */
+  const file = await shrinkPhoto(original);
+  if (file.size > MAX_BYTES) return { result: RESULT.TOO_LARGE, limit: MAX_BYTES };
 
   const id = newId();
   try {
@@ -78,7 +129,9 @@ export async function saveFile(file) {
         size: file.size,
         mime: file.type || "application/octet-stream",
         addedAt: new Date().toISOString(),
-        sealed: Boolean(key)
+        sealed: Boolean(key),
+        /* Kept so the owner can see a photo was reduced, and by how much. */
+        originalSize: file.size === original.size ? null : original.size
       }
     };
   } catch (error) {

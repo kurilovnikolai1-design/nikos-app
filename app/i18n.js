@@ -3,7 +3,7 @@
    a record the owner named "Задачи" was silently rewritten to "Tasks".
    Here nothing touches user data: only these keys are ever translated. */
 
-import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-130123";
+import { STATUS, PRIORITY, CONFIDENCE, OWNER, FREQUENCY, TYPES } from "./schema.js?v=20260827-130449";
 
 const LOCALE_KEY = "nikos-locale";
 let locale = "ru";
@@ -200,6 +200,7 @@ const DICT = {
   "form.noLink": { ru: "Без связи", en: "No link" },
   "form.file": { ru: "Файл", en: "File" },
   "form.fileOpen": { ru: "Открыть", en: "Open" },
+  "form.fileShrunk": { ru: "уменьшено с {from}", en: "reduced from {from}" },
   "form.fileRemove": { ru: "Убрать", en: "Remove" },
   "form.fileMissing": { ru: "Файл не найден. Если стоит PIN — сначала разблокируйте.", en: "File not found. If a PIN is set, unlock first." },
   "form.fileFailed": { ru: "Не удалось сохранить файл.", en: "Could not store the file." },

@@ -1,28 +1,28 @@
 /* Boot, shell and routing. */
 
-import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-130123";
+import { el, mount, toast, openDialog, confirmDialog } from "./ui.js?v=20260827-130449";
 import { initLocale, setLocale, getLocale, onLocaleChange, t, typeLabel, categoryLabel,
-         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-130123";
-import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-130123";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-130123";
-import { buildAttention } from "./attention.js?v=20260827-130123";
-import { refresh, recordRow } from "./render.js?v=20260827-130123";
-import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-130123";
-import { scheduleRateRefresh } from "./main-rates.js?v=20260827-130123";
-import { selfTest as safetySelfTest } from "./safety.js?v=20260827-130123";
-import * as lock from "./lock.js?v=20260827-130123";
-import * as persist from "./persist.js?v=20260827-130123";
-import * as store from "./store.js?v=20260827-130123";
-import * as records from "./records.js?v=20260827-130123";
-import * as cloud from "./cloud.js?v=20260827-130123";
-import * as notify from "./notify.js?v=20260827-130123";
-import * as attachments from "./attachments.js?v=20260827-130123";
-import * as whoop from "./whoop.js?v=20260827-130123";
+         statusLabel, formatDate, countOf, PLURALS } from "./i18n.js?v=20260827-130449";
+import { initRouter, navigate, onNavigate, currentView, VIEWS } from "./router.js?v=20260827-130449";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-130449";
+import { buildAttention } from "./attention.js?v=20260827-130449";
+import { refresh, recordRow } from "./render.js?v=20260827-130449";
+import { openRecordForm, ensureCoinList } from "./form.js?v=20260827-130449";
+import { scheduleRateRefresh } from "./main-rates.js?v=20260827-130449";
+import { selfTest as safetySelfTest } from "./safety.js?v=20260827-130449";
+import * as lock from "./lock.js?v=20260827-130449";
+import * as persist from "./persist.js?v=20260827-130449";
+import * as store from "./store.js?v=20260827-130449";
+import * as records from "./records.js?v=20260827-130449";
+import * as cloud from "./cloud.js?v=20260827-130449";
+import * as notify from "./notify.js?v=20260827-130449";
+import * as attachments from "./attachments.js?v=20260827-130449";
+import * as whoop from "./whoop.js?v=20260827-130449";
 
-import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-130123";
-import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-130123";
-import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-130123";
-import { settingsView } from "./views/settings.js?v=20260827-130123";
+import { commandView, inboxView, tasksView, projectsView, openQuickAdd } from "./views/core.js?v=20260827-130449";
+import { capitalView, debtsView, cashflowView, investmentsView, cryptoView } from "./views/money.js?v=20260827-130449";
+import { assetsView, healthView, labsView, documentsView, peopleView, decisionsView, timelineView } from "./views/life.js?v=20260827-130449";
+import { settingsView } from "./views/settings.js?v=20260827-130449";
 
 const ru = () => getLocale() === "ru";
 
@@ -435,6 +435,37 @@ async function boot() {
   window.__nikosReady = true;
 
   notify.watch();
+
+  /* No connection is a normal state for this app, not an error — records are
+     written locally either way. What is worth saying is the consequence: the
+     cloud copy is not being updated, so a lost phone would lose whatever was
+     entered since. */
+  const connectionBar = el("div", { class: "connection-bar", hidden: "hidden" });
+  document.body.append(connectionBar);
+
+  const showConnection = () => {
+    const offline = !navigator.onLine;
+    connectionBar.hidden = !offline;
+    if (offline) {
+      connectionBar.textContent = getLocale() === "ru"
+        ? "Нет сети. Записи сохраняются на устройстве и уедут в облако, когда связь вернётся."
+        : "Offline. Records are saved on this device and will upload when the connection returns.";
+    }
+  };
+  window.addEventListener("online", () => { showConnection(); cloud.schedulePush(200); });
+  window.addEventListener("offline", showConnection);
+  showConnection();
+
+  /* Running out of room is the one failure that loses records, so it is worth
+     saying well before it happens rather than at the moment a save fails. */
+  void persist.usage().then((used) => {
+    if (!used || !Number.isFinite(used.percent)) return;
+    if (used.percent < 85) return;
+    toast(getLocale() === "ru"
+      ? `Хранилище заполнено на ${used.percent}%. Освободите место или удалите крупные вложения — иначе новые записи перестанут сохраняться.`
+      : `Storage is ${used.percent}% full. Free some space or remove large attachments, or new records will stop saving.`,
+      { tone: "danger", duration: 12000 });
+  });
 
   /* Deleting a record leaves its file behind. On a phone that accumulates
      silently, and the storage grant these records depend on is finite — so

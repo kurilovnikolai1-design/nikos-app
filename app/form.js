@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-130123";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-130123";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-130123";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-130123";
-import { COINS } from "./rates.js?v=20260827-130123";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-130123";
-import * as store from "./store.js?v=20260827-130123";
-import * as records from "./records.js?v=20260827-130123";
-import * as attachments from "./attachments.js?v=20260827-130123";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-130449";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-130449";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-130449";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-130449";
+import { COINS } from "./rates.js?v=20260827-130449";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-130449";
+import * as store from "./store.js?v=20260827-130449";
+import * as records from "./records.js?v=20260827-130449";
+import * as attachments from "./attachments.js?v=20260827-130449";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -481,7 +481,9 @@ export function openRecordForm(type, existing = null, { onSaved = null, presets 
     if (attachment) {
       rows.push(el("div", { class: "attachment-row" }, [
         el("span", { class: "attachment-name", text: attachment.name }),
-        el("small", { text: attachments.describeSize(attachment.size, getLocale()) }),
+        el("small", { text: attachment.originalSize
+          ? `${attachments.describeSize(attachment.size, getLocale())} · ${t("form.fileShrunk").replace("{from}", attachments.describeSize(attachment.originalSize, getLocale()))}`
+          : attachments.describeSize(attachment.size, getLocale()) }),
         el("button", {
           class: "text-button", type: "button", text: t("form.fileOpen"),
           onclick: async () => {
