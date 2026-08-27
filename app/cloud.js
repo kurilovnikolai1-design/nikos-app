@@ -5,8 +5,9 @@
    merged by updatedAt, and a delete is synced as a soft delete so a device
    that has been offline cannot resurrect a removed record. */
 
-import { t, getLocale } from "./i18n.js?v=20260827-064144";
-import * as store from "./store.js?v=20260827-064144";
+import { t, getLocale } from "./i18n.js?v=20260827-073228";
+import * as store from "./store.js?v=20260827-073228";
+import { migrateRecord } from "./records.js?v=20260827-073228";
 
 const CONFIG_KEY = "nikos-cloud-config";
 const CONSENT_KEY = "nikos-cloud-consent";
@@ -47,7 +48,7 @@ function loadLibrary() {
   if (libraryPromise) return libraryPromise;
   libraryPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "vendor/supabase.js?v=20260827-064144";
+    script.src = "vendor/supabase.js?v=20260827-073228";
     script.async = true;
     script.onload = () => (globalThis.supabase?.createClient ? resolve(globalThis.supabase) : reject(new Error("supabase missing")));
     script.onerror = () => reject(new Error("supabase failed to load"));
@@ -142,6 +143,23 @@ export async function pushRecord(record) {
   return { ok: true };
 }
 
+/* Removing records locally is not enough: syncAll merges both directions, so
+   anything still in the cloud comes straight back on the next pass. Deletions
+   that are meant to be permanent have to be made there too. */
+export async function deleteRecords(ids) {
+  if (!isConnected() || !hasConsent() || !ids.length) return { ok: true, skipped: true };
+  const { error } = await client.from(TABLE).delete().eq("user_id", user.id).in("record_id", ids);
+  if (error) { announce("error", error.message); return { ok: false, message: error.message }; }
+  return { ok: true, deleted: ids.length };
+}
+
+export async function deleteAllRecords() {
+  if (!isConnected() || !hasConsent()) return { ok: true, skipped: true };
+  const { error } = await client.from(TABLE).delete().eq("user_id", user.id);
+  if (error) { announce("error", error.message); return { ok: false, message: error.message }; }
+  return { ok: true };
+}
+
 /* Merge by updatedAt in both directions, then write the union back. A soft
    delete carries its own updatedAt, so it wins over an older local copy. */
 export async function syncAll() {
@@ -155,7 +173,11 @@ export async function syncAll() {
   let pulled = 0;
 
   for (const row of remote.data || []) {
-    const incoming = row.payload;
+    /* A device that has not been updated yet can still be pushing records in
+       the old shape. They were being adopted verbatim, which recreated exactly
+       the orphan-record problem the rebuild removed — a debt/"other" arriving
+       from another device would render nowhere. Migrate on the way in. */
+    const incoming = migrateRecord(row.payload);
     if (!incoming?.id) continue;
     const mine = merged.get(incoming.id);
     const theirTime = new Date(incoming.updatedAt || row.updated_at || 0).getTime();

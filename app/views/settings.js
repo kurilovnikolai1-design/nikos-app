@@ -1,18 +1,18 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-064144";
-import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-064144";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-064144";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-064144";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-064144";
-import * as lock from "../lock.js?v=20260827-064144";
-import * as persist from "../persist.js?v=20260827-064144";
-import * as store from "../store.js?v=20260827-064144";
-import * as records from "../records.js?v=20260827-064144";
-import * as cloud from "../cloud.js?v=20260827-064144";
-import { refreshRates } from "../main-rates.js?v=20260827-064144";
-import { loadDemoData } from "../demo.js?v=20260827-064144";
-import { whoopRow } from "../whoop.js?v=20260827-064144";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-073228";
+import { t, getLocale, setLocale, formatDate, countOf, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-073228";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-073228";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-073228";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-073228";
+import * as lock from "../lock.js?v=20260827-073228";
+import * as persist from "../persist.js?v=20260827-073228";
+import * as store from "../store.js?v=20260827-073228";
+import * as records from "../records.js?v=20260827-073228";
+import * as cloud from "../cloud.js?v=20260827-073228";
+import { refreshRates } from "../main-rates.js?v=20260827-073228";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-073228";
+import { whoopRow } from "../whoop.js?v=20260827-073228";
 
 const ru = () => getLocale() === "ru";
 
@@ -213,6 +213,7 @@ export function settingsView() {
 
   function backupPanel() {
     const usage = persist.usage();
+    const demoCount = countDemo(store.allRecords());
 
     return panel("settings-panel",
       panelHeader(ru() ? "ДАННЫЕ" : "DATA", t("set.backup")),
@@ -233,9 +234,16 @@ export function settingsView() {
           el("div", { class: "usage-bar" }, [el("i", { style: `width:${Math.min(100, usage.percent)}%`, class: usage.percent > 80 ? "warn" : "" })])) : null,
 
         settingRow("◫", t("set.demoData"),
-          ru() ? "Заполнить пример, чтобы посмотреть, как всё работает" : "Load a sample so you can see how it works",
+          demoCount
+            ? (ru() ? `В базе ${demoCount} записей из примера — их можно убрать, не трогая ваши`
+                    : `${demoCount} sample records — removable without touching yours`)
+            : (ru() ? "Заполнить пример, чтобы посмотреть, как всё работает" : "Load a sample so you can see how it works"),
           el("div", { class: "row-actions" }, [
-            el("button", { class: "small-button", type: "button", text: t("set.loadDemo"), onclick: loadDemo }),
+            demoCount
+              ? el("button", { class: "small-button danger", type: "button",
+                               text: ru() ? `Удалить пример (${demoCount})` : `Remove sample (${demoCount})`,
+                               onclick: removeDemo })
+              : el("button", { class: "small-button", type: "button", text: t("set.loadDemo"), onclick: loadDemo }),
             el("button", { class: "small-button danger", type: "button", text: t("set.clearDemo"), onclick: clearAll })
           ]))
       ].filter(Boolean)));
@@ -312,6 +320,25 @@ export function settingsView() {
     refresh();
   }
 
+  async function removeDemo() {
+    const count = countDemo(store.allRecords());
+    const ok = await confirmDialog({
+      title: ru() ? "Удалить пример" : "Remove the sample",
+      message: ru()
+        ? `Будут удалены только ${count} записей из примера. Ваши собственные и данные из WHOOP останутся на месте.`
+        : `Only the ${count} sample records are removed. Your own records and anything from WHOOP stay.`,
+      confirmLabel: ru() ? "Удалить пример" : "Remove sample", tone: "danger"
+    });
+    if (!ok) return;
+    const ids = store.allRecords().filter(isDemoRecord).map((record) => record.id);
+    const result = await clearDemoData();
+    if (!result.ok) { toast(t("sec.storageFull"), { tone: "danger" }); return; }
+    // Remove them in the cloud too, or the next sync brings them all back.
+    if (cloud.isConnected()) await cloud.deleteRecords(ids);
+    toast(ru() ? `Удалено записей из примера: ${result.count}` : `${result.count} sample records removed`, { tone: "success" });
+    refresh();
+  }
+
   async function clearAll() {
     const ok = await confirmDialog({
       title: t("set.clearDemo"),
@@ -323,6 +350,7 @@ export function settingsView() {
     });
     if (!ok) return;
     await store.replaceAll({ records: [], audit: [], settings: store.getSettings(), rates: store.getRates() });
+    if (cloud.isConnected()) await cloud.deleteAllRecords();
     toast(ru() ? "Все записи удалены" : "All records deleted");
     refresh();
   }
@@ -488,7 +516,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-064144");
+                       const suite = await import("../selftest.js?v=20260827-073228");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

@@ -5,8 +5,8 @@
    quietly made the dashboard look busier than the owner's real life. Sample
    data is now opt-in, made of ordinary records, and deletable like any other. */
 
-import * as store from "./store.js?v=20260827-064144";
-import { blankRecord } from "./records.js?v=20260827-064144";
+import * as store from "./store.js?v=20260827-073228";
+import { blankRecord } from "./records.js?v=20260827-073228";
 
 const shift = (days) => {
   const date = new Date();
@@ -14,7 +14,16 @@ const shift = (days) => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
 
-const make = (type, fields) => ({ ...blankRecord(type), ...fields, source: "demo", details: [fields.details, "Пример данных"].filter(Boolean).join(" · ") });
+const make = (type, fields) => ({
+  ...blankRecord(type), ...fields,
+  source: "demo", isDemo: true,
+  details: [fields.details, "Пример данных"].filter(Boolean).join(" · ")
+});
+
+export const isDemoRecord = (record) =>
+  record?.isDemo === true || record?.source === "demo";
+
+export const countDemo = (records) => records.filter(isDemoRecord).length;
 
 export async function loadDemoData() {
   const sample = [
@@ -78,4 +87,15 @@ export async function loadDemoData() {
   const result = await store.commit((existing) => existing.concat(sample), "demo-loaded");
   if (result.ok) store.pushAudit({ action: "imported", name: `demo · ${sample.length}` });
   return { ...result, count: sample.length };
+}
+
+/* Remove the sample and nothing else. "Clear everything" was the only way to
+   get rid of it, which is a poor trade once real records are mixed in. */
+export async function clearDemoData() {
+  const doomed = store.allRecords().filter(isDemoRecord);
+  if (!doomed.length) return { ok: true, count: 0 };
+  const ids = new Set(doomed.map((record) => record.id));
+  const result = await store.commit((records) => records.filter((record) => !ids.has(record.id)), "demo-cleared");
+  if (result.ok) store.pushAudit({ action: "deleted", name: `demo · ${doomed.length}` });
+  return { ...result, count: doomed.length };
 }
