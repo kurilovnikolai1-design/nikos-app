@@ -5,9 +5,9 @@
    a month of income and expenses could be entered and the totals stayed empty
    because the default status excluded them. Nothing is dropped in silence now. */
 
-import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-172643";
-import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-172643";
-import { quoteFor } from "./quotes.js?v=20260827-172643";
+import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260828-003727";
+import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260828-003727";
+import { quoteFor } from "./quotes.js?v=20260828-003727";
 
 export const EXCLUSION = {
   UNCONFIRMED: "unconfirmed",
@@ -275,10 +275,22 @@ export function byOwner(records, base, rates, range) {
 
 /* ---------- Recurring obligations ---------- */
 
+/* An obligation with no stated period cannot be turned into a monthly figure.
+ *
+ * The old fallback of "?? 1" treated a missing frequency as monthly, so a
+ * weekly 9 000 ₽ payment counted as 9 000 ₽ a month rather than 39 000 ₽ —
+ * and said nothing about it. Silence is the wrong answer here: the number was
+ * wrong by a factor of four in the direction that flatters the budget.
+ *
+ * Now it returns null, exactly like an amount with no exchange rate, and the
+ * caller reports what it could not count. */
 export const monthlyEquivalentMinor = (record, base, rates) => {
   const value = valueInBase(record, base, rates);
   if (value.minor === null) return null;
-  const perMonth = FREQUENCY[record.frequency]?.perMonth ?? 1;
+
+  const perMonth = FREQUENCY[record.frequency]?.perMonth;
+  if (perMonth === undefined) return null;
+
   return Math.round(value.minor * perMonth);
 };
 
@@ -290,7 +302,14 @@ export function recurringLoad(records, base, rates) {
   let incomeMinor = 0;
   const noRate = [];
 
+  const noFrequency = [];
+
   for (const record of active) {
+    /* Two different reasons a record cannot be counted, and they need
+       different words: "нет курса" is about money, "не указана периодичность"
+       is about the schedule, and only the second is fixed in one tap. */
+    if (!Object.hasOwn(FREQUENCY, record.frequency)) { noFrequency.push(record); continue; }
+
     const minor = monthlyEquivalentMinor(record, base, rates);
     if (minor === null) { noRate.push(record); continue; }
     if (record.type === "expense") expenseMinor += minor;
@@ -306,7 +325,7 @@ export function recurringLoad(records, base, rates) {
     return !Number.isNaN(date.getTime()) && date <= horizon;
   });
 
-  return { active, expenseMinor, incomeMinor, netMinor: incomeMinor - expenseMinor, dueSoon, noRate };
+  return { active, expenseMinor, incomeMinor, netMinor: incomeMinor - expenseMinor, dueSoon, noRate, noFrequency };
 }
 
 /* ---------- Sport & health ---------- */

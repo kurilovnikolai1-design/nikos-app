@@ -1242,6 +1242,13 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .debt-total { font-size: var(--step-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
 .debt-line small { color: var(--faint); font-size: var(--step-xs); overflow-wrap: anywhere; }
 
+/* Obligations missing a period: shown, not dropped, and one tap from a fix. */
+.unscheduled { display: grid; gap: 8px; margin-top: 10px; }
+
+/* A select that is displaying nothing, rather than pretending to display the
+   first option. */
+.form-control.unset { color: var(--faint); border-style: dashed; }
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }

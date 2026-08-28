@@ -1,20 +1,20 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-172643";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260828-003727";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-172643";
-import { formatMoney } from "../money.js?v=20260827-172643";
-import { netWorth, periodRange, sportSummary, inRange, valueInBase } from "../finance.js?v=20260827-172643";
-import { buildAttention } from "../attention.js?v=20260827-172643";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-172643";
-import { openRecordForm } from "../form.js?v=20260827-172643";
-import { navigate } from "../router.js?v=20260827-172643";
-import { isVerified } from "../schema.js?v=20260827-172643";
-import * as store from "../store.js?v=20260827-172643";
-import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-172643";
-import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-172643";
-import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260827-172643";
-import * as records from "../records.js?v=20260827-172643";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260828-003727";
+import { formatMoney } from "../money.js?v=20260828-003727";
+import { netWorth, periodRange, sportSummary, inRange, valueInBase } from "../finance.js?v=20260828-003727";
+import { buildAttention } from "../attention.js?v=20260828-003727";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260828-003727";
+import { openRecordForm } from "../form.js?v=20260828-003727";
+import { navigate } from "../router.js?v=20260828-003727";
+import { isVerified } from "../schema.js?v=20260828-003727";
+import * as store from "../store.js?v=20260828-003727";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260828-003727";
+import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260828-003727";
+import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260828-003727";
+import * as records from "../records.js?v=20260828-003727";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";

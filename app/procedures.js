@@ -14,7 +14,7 @@
  * The full text is always kept alongside whatever was extracted, so nothing
  * depends on this file having understood the layout correctly. */
 
-import { localDate } from "./dates.js?v=20260827-172643";
+import { localDate } from "./dates.js?v=20260828-003727";
 
 const MONTHS = {
   "январ": 1, "феврал": 2, "март": 3, "апрел": 4, "мая": 5, "май": 5, "июн": 6,

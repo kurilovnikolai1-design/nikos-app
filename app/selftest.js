@@ -2,35 +2,35 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-172643";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-172643";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-172643";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, yearOverYear, byOwner, EXCLUSION } from "./finance.js?v=20260827-172643";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-172643";
-import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-172643";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-172643";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-172643";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-172643";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-172643";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-172643";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-172643";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-172643";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-172643";
-import { parseReport } from "./procedures.js?v=20260827-172643";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260827-172643";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-172643";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-172643";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-172643";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-172643";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-172643";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-172643";
-import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260827-172643";
-import { parseStatement } from "./bank-import.js?v=20260827-172643";
-import { attachmentsOf } from "./attachments.js?v=20260827-172643";
-import { isSyncDue } from "./whoop.js?v=20260827-172643";
-import { assetsWithCosts } from "./asset-costs.js?v=20260827-172643";
-import { parseQuick } from "./quick-parse.js?v=20260827-172643";
-import { localDate, daysBetween, shiftDays, fromDate } from "./dates.js?v=20260827-172643";
+import { parseAmount, formatMoney } from "./money.js?v=20260828-003727";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260828-003727";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260828-003727";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, yearOverYear, byOwner, monthlyEquivalentMinor, EXCLUSION } from "./finance.js?v=20260828-003727";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260828-003727";
+import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260828-003727";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260828-003727";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260828-003727";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260828-003727";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260828-003727";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260828-003727";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260828-003727";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260828-003727";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260828-003727";
+import { parseReport } from "./procedures.js?v=20260828-003727";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260828-003727";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260828-003727";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260828-003727";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260828-003727";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260828-003727";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260828-003727";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260828-003727";
+import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260828-003727";
+import { parseStatement } from "./bank-import.js?v=20260828-003727";
+import { attachmentsOf } from "./attachments.js?v=20260828-003727";
+import { isSyncDue } from "./whoop.js?v=20260828-003727";
+import { assetsWithCosts } from "./asset-costs.js?v=20260828-003727";
+import { parseQuick } from "./quick-parse.js?v=20260828-003727";
+import { localDate, daysBetween, shiftDays, fromDate } from "./dates.js?v=20260828-003727";
 
 /* A goal must never add to net worth; the money is already counted where it sits. */
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
@@ -127,7 +127,10 @@ const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0
 const flows = [
   record({ id: "i1", type: "income", category: "salary", amountMinor: 300_000_00, status: "confirmed", date: iso(new Date()) }),
   record({ id: "e1", type: "expense", category: "living", amountMinor: 25_000_00, status: "confirmed", date: iso(new Date()) }),
-  record({ id: "e2", type: "expense", category: "mortgage", amountMinor: 60_000_00, status: "confirmed", date: iso(new Date()), recurring: true }),
+  /* A monthly obligation says so. Before, a recurring record with no period
+     was silently treated as monthly, which is how a weekly payment came out
+     four times too small. */
+  record({ id: "e2", type: "expense", category: "mortgage", amountMinor: 60_000_00, status: "confirmed", date: iso(new Date()), recurring: true, frequency: "monthly" }),
   record({ id: "e3", type: "expense", category: "living", amountMinor: 9_999_00, status: "confirmed", date: "2026-01-15" })
 ];
 const flow = cashflow(flows, "RUB", RATES, thisMonth);
@@ -137,6 +140,27 @@ check("чистый поток", flow.netMinor === 275_000_00);
 check("прошлый месяц не в периоде", !flow.expenseRecords.some((r) => r.id === "e3"));
 
 const recurring = recurringLoad(flows, "RUB", RATES);
+/* The bug he found: a weekly 9 000 ₽ obligation was reported as 9 000 ₽ a
+   month. The select showed "Еженедельно" while the record stored nothing, and
+   the calculation treated a missing period as monthly — wrong by a factor of
+   four, in the direction that flatters the budget. */
+const weekly = record({ id: "wk", type: "expense", recurring: true, frequency: "weekly",
+                        amountMinor: 9_000_00, currency: "RUB", status: "confirmed" });
+check("еженедельный платёж приводится к месяцу",
+      monthlyEquivalentMinor(weekly, "RUB", RATES) === Math.round(9_000_00 * 52 / 12),
+      String(monthlyEquivalentMinor(weekly, "RUB", RATES)));
+
+const noPeriod = record({ id: "np", type: "expense", recurring: true,
+                          amountMinor: 9_000_00, currency: "RUB", status: "confirmed" });
+check("без периодичности сумма не выдумывается",
+      monthlyEquivalentMinor(noPeriod, "RUB", RATES) === null,
+      "молчаливое «раз в месяц» — это ошибка в четыре раза");
+
+const mixedLoad = recurringLoad([weekly, noPeriod], "RUB", RATES);
+check("в нагрузку входит только посчитанное", mixedLoad.expenseMinor === Math.round(9_000_00 * 52 / 12));
+check("непосчитанное названо отдельно", mixedLoad.noFrequency.length === 1,
+      "иначе запись просто исчезает из списка обязательств");
+
 check("месячная нагрузка", recurring.expenseMinor === 60_000_00);
 
 /* Quarterly and annual are normalised to a month. */
@@ -291,11 +315,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-172643")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260828-003727")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-172643")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260828-003727")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -304,14 +328,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-172643")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260828-003727")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-172643")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260828-003727")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",

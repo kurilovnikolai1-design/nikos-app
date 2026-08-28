@@ -19,8 +19,8 @@
  *   excluded and why; that count is carried through, because "осталось 40 000"
  *   is a different statement when three expenses were not counted. */
 
-import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260827-172643";
-import { localDate } from "./dates.js?v=20260827-172643";
+import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260828-003727";
+import { localDate } from "./dates.js?v=20260828-003727";
 
 export const BUDGET_STATE = {
   UNSET: "unset",
@@ -79,7 +79,9 @@ export function committedAhead(records, base, rates, { now = new Date() } = {}) 
   for (const record of records) {
     if (record.deletedAt || record.type !== "expense" || !record.recurring) continue;
     if (record.status === "archived") continue;
-    if (record.frequency && record.frequency !== "monthly") continue;
+    /* Explicitly monthly, not merely "not something else": a record with no
+       period at all was passing this check and being charged to this month. */
+    if (record.frequency !== "monthly") continue;
 
     const source = record.nextDueDate || record.date;
     if (!source) continue;

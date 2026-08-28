@@ -21,8 +21,8 @@
  *   later for ever. When lateness has pushed the next date into the past
  *   already, it advances until it is ahead — no backlog of phantom tasks. */
 
-import { FREQUENCY } from "./schema.js?v=20260827-172643";
-import { localDate, fromDate } from "./dates.js?v=20260827-172643";
+import { FREQUENCY } from "./schema.js?v=20260828-003727";
+import { localDate, fromDate } from "./dates.js?v=20260828-003727";
 
 const STEP = {
   weekly:    (date) => date.setDate(date.getDate() + 7),

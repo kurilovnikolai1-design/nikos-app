@@ -13,7 +13,7 @@
  * A comparison needs enough sessions to mean anything. Where there are not
  * enough, the trend is withheld rather than computed from two points — the
  * same rule the health observations follow. */
-import { localDate } from "./dates.js?v=20260827-172643";
+import { localDate } from "./dates.js?v=20260828-003727";
 
 const MIN_SESSIONS_FOR_TREND = 3;
 const DAY = 86_400_000;

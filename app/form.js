@@ -6,15 +6,15 @@
    Second, the form is built from the schema, so a field can never belong to
    the wrong entity and a category list can never drift from its type. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260827-172643";
-import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260827-172643";
-import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260827-172643";
-import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260827-172643";
-import { COINS } from "./rates.js?v=20260827-172643";
-import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260827-172643";
-import * as store from "./store.js?v=20260827-172643";
-import * as records from "./records.js?v=20260827-172643";
-import * as attachments from "./attachments.js?v=20260827-172643";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260828-003727";
+import { t, getLocale, statusLabel, priorityLabel, confidenceLabel, ownerLabel, frequencyLabel, categoryLabel, typeLabel } from "./i18n.js?v=20260828-003727";
+import { TYPES, typeDef, categoriesOf, statusesOf, fieldsOf, PRIORITY, CONFIDENCE, OWNER, FREQUENCY } from "./schema.js?v=20260828-003727";
+import { CURRENCY_CODES, CURRENCIES, parseAmount, toMajor } from "./money.js?v=20260828-003727";
+import { COINS } from "./rates.js?v=20260828-003727";
+import { fieldCopy, namePlaceholder } from "./form-copy.js?v=20260828-003727";
+import * as store from "./store.js?v=20260828-003727";
+import * as records from "./records.js?v=20260828-003727";
+import * as attachments from "./attachments.js?v=20260828-003727";
 
 /* Fields worth showing before the owner asks for more. Everything not listed
    here is real, supported and one click away — just not in the way. */
@@ -67,10 +67,29 @@ function field(labelText, control, { hint = "", error = "", wide = false } = {})
 
 const option = (value, label, selected) => el("option", { value, selected: selected ? "selected" : null, text: label });
 
-function selectFrom(map, value, labeller, onChange) {
-  const node = el("select", { class: "form-control", onchange: (event) => onChange(event.target.value) },
-    Object.keys(map).map((key) => option(key, labeller(key), key === value)));
-  return node;
+/* A select must never display a value it has not stored.
+ *
+ * With no placeholder, a field whose value is null showed the first option —
+ * so a weekly obligation read "Еженедельно" on screen while the record held
+ * nothing, the owner had no reason to touch the control, and the monthly
+ * total quietly multiplied by one instead of 4.33. A 9 000 ₽ weekly payment
+ * appeared as 9 000 ₽ a month.
+ *
+ * When the value is missing the list now says so, and choosing is required. */
+function selectFrom(map, value, labeller, onChange, { placeholder = null } = {}) {
+  const known = Object.hasOwn(map, value);
+  const options = Object.keys(map).map((key) => option(key, labeller(key), key === value));
+
+  if (!known) {
+    const empty = option("", placeholder || (getLocale() === "ru" ? "— не выбрано —" : "— not set —"), true);
+    empty.disabled = true;
+    options.unshift(empty);
+  }
+
+  return el("select", {
+    class: `form-control${known ? "" : " unset"}`,
+    onchange: (event) => onChange(event.target.value || null)
+  }, options);
 }
 
 export function openRecordForm(type, existing = null, { onSaved = null, presets = null } = {}) {

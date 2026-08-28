@@ -1,22 +1,22 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-172643";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260828-003727";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         plural, PLURALS, formatNumber, typeLabel, frequencyLabel, ownerLabel } from "../i18n.js?v=20260827-172643";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-172643";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear, byOwner } from "../finance.js?v=20260827-172643";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-172643";
-import { refreshRates } from "../main-rates.js?v=20260827-172643";
-import { openBankImport } from "../csv.js?v=20260827-172643";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-172643";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-172643";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-172643";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-172643";
-import { isVerified } from "../schema.js?v=20260827-172643";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-172643";
-import { openRecordForm } from "../form.js?v=20260827-172643";
-import * as store from "../store.js?v=20260827-172643";
-import * as records from "../records.js?v=20260827-172643";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel, ownerLabel } from "../i18n.js?v=20260828-003727";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260828-003727";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear, byOwner, valueInBase } from "../finance.js?v=20260828-003727";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260828-003727";
+import { refreshRates } from "../main-rates.js?v=20260828-003727";
+import { openBankImport } from "../csv.js?v=20260828-003727";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260828-003727";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260828-003727";
+import { QUOTES_NOTE } from "../quotes.js?v=20260828-003727";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260828-003727";
+import { isVerified } from "../schema.js?v=20260828-003727";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260828-003727";
+import { openRecordForm } from "../form.js?v=20260828-003727";
+import * as store from "../store.js?v=20260828-003727";
+import * as records from "../records.js?v=20260828-003727";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -535,6 +535,11 @@ export function cashflowView() {
       .filter((entry) => entry.minor !== null)
       .sort((a, b) => b.minor - a.minor);
 
+    /* Obligations that cannot be turned into a monthly figure, listed rather
+       than dropped: one of them is the reason a weekly payment used to read as
+       a monthly one, and it is fixed by opening the record and choosing. */
+    const unscheduled = recurring.noFrequency || [];
+
     page.append(panel("records-panel recurring-panel",
       panelHeader(ru() ? "УХОДИТ КАЖДЫЙ МЕСЯЦ" : "LEAVES EVERY MONTH",
         ru() ? `${money(recurring.expenseMinor)} расходов, ${money(recurring.incomeMinor)} доходов`
@@ -550,6 +555,19 @@ export function cashflowView() {
                              .filter(Boolean).join(" · ") }),
         el("b", { text: `${record.type === "expense" ? "−" : "+"}${money(minor)}` })
       ]))),
+
+      unscheduled.length
+        ? el("div", { class: "unscheduled" }, [
+            el("p", { class: "panel-note warn", text: ru()
+              ? `Не указана периодичность, поэтому в сумму не вошли: ${unscheduled.length}. Откройте и выберите — иначе непонятно, раз в неделю это или раз в год.`
+              : `${unscheduled.length} have no period set and are not counted. Open them and choose.` }),
+            el("div", { class: "routing-analytes" }, unscheduled.map((record) => el("button", {
+              class: "chip", type: "button",
+              text: `${record.name || typeLabel(record.type)} · ${money(valueInBase(record, base(), store.getRates()).minor ?? 0)}`,
+              onclick: () => openRecordForm(record.type, record, { onSaved: refresh })
+            })))
+          ])
+        : null,
 
       recurring.noRate.length
         ? el("p", { class: "panel-note warn", text: ru()
