@@ -4,12 +4,12 @@
    feed the weight and sleep trends instead of becoming unreadable text blobs.
    Everything imported stays unconfirmed until the owner accepts it. */
 
-import { el, openDialog, toast } from "./ui.js?v=20260827-171138";
-import { t, getLocale, countOf, PLURALS, categoryLabel } from "./i18n.js?v=20260827-171138";
-import { categoriesOf } from "./schema.js?v=20260827-171138";
-import * as store from "./store.js?v=20260827-171138";
-import * as records from "./records.js?v=20260827-171138";
-import { parseStatement, BANK_NOTE } from "./bank-import.js?v=20260827-171138";
+import { el, openDialog, toast } from "./ui.js?v=20260827-171447";
+import { t, getLocale, countOf, PLURALS, categoryLabel } from "./i18n.js?v=20260827-171447";
+import { categoriesOf } from "./schema.js?v=20260827-171447";
+import * as store from "./store.js?v=20260827-171447";
+import * as records from "./records.js?v=20260827-171447";
+import { parseStatement, BANK_NOTE } from "./bank-import.js?v=20260827-171447";
 
 const ru = () => getLocale() === "ru";
 const MAX_ROWS = 2000;

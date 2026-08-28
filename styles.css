@@ -1200,6 +1200,25 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .yoy-line.good b { color: var(--good, #3e8e6e); }
 .yoy-line.warn b { color: var(--warn); }
 
+/* What a thing costs to keep, next to what it is worth. */
+.upkeep-list { display: grid; gap: 8px; }
+.upkeep-row {
+  display: grid; gap: 3px; width: 100%; text-align: left;
+  padding: 12px 14px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  color: var(--text); cursor: pointer;
+}
+.upkeep-row:hover { border-color: var(--accent); }
+.upkeep-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: 4px 12px;
+}
+.upkeep-head strong { font-size: var(--step-sm); }
+.upkeep-head b { font-variant-numeric: tabular-nums; font-weight: 700; }
+.upkeep-row small { color: var(--faint); font-size: var(--step-xs); line-height: 1.45; }
+.upkeep-breakdown { color: var(--muted) !important; }
+.upkeep-row small.warn { color: var(--warn) !important; }
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }

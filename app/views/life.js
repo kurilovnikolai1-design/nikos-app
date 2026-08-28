@@ -1,28 +1,29 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-171138";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-171447";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-171138";
-import { formatMoney } from "../money.js?v=20260827-171138";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-171138";
-import { categoriesOf } from "../schema.js?v=20260827-171138";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-171138";
-import { openRecordForm } from "../form.js?v=20260827-171138";
-import { navigate } from "../router.js?v=20260827-171138";
-import { importCsv } from "../csv.js?v=20260827-171138";
-import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-171138";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-171138";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-171138";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-171138";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-171138";
-import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-171138";
-import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-171138";
-import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260827-171138";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-171138";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-171138";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-171138";
-import * as store from "../store.js?v=20260827-171138";
-import * as records from "../records.js?v=20260827-171138";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-171447";
+import { formatMoney } from "../money.js?v=20260827-171447";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-171447";
+import { categoriesOf } from "../schema.js?v=20260827-171447";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-171447";
+import { openRecordForm } from "../form.js?v=20260827-171447";
+import { navigate } from "../router.js?v=20260827-171447";
+import { importCsv } from "../csv.js?v=20260827-171447";
+import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-171447";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-171447";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-171447";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-171447";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-171447";
+import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-171447";
+import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-171447";
+import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260827-171447";
+import { assetsWithCosts, ASSET_COST_NOTE } from "../asset-costs.js?v=20260827-171447";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-171447";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-171447";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-171447";
+import * as store from "../store.js?v=20260827-171447";
+import * as records from "../records.js?v=20260827-171447";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -61,6 +62,51 @@ export function assetsView() {
   ], assetState.category, (value) => { assetState.category = value; refresh(); }));
 
   const shown = assetState.category === "all" ? all : all.filter((record) => record.category === assetState.category);
+
+  /* What each thing costs to keep. A valuation says what it is worth; only
+     this says whether owning it makes sense. */
+  const upkeep = assetsWithCosts(store.liveRecords(), base(), store.getRates());
+  if (upkeep.length) {
+    page.append(panel("records-panel upkeep-panel",
+      panelHeader(ru() ? "СОДЕРЖАНИЕ" : "UPKEEP",
+        ru() ? `${money(upkeep.reduce((sum, item) => sum + (item.perMonthMinor || 0), 0))} в месяц`
+             : `${money(upkeep.reduce((sum, item) => sum + (item.perMonthMinor || 0), 0))} a month`),
+
+      el("div", { class: "upkeep-list" }, upkeep.map((item) => el("button", {
+        class: "upkeep-row", type: "button",
+        onclick: () => openRecordForm("asset", item.asset, { onSaved: refresh })
+      }, [
+        el("div", { class: "upkeep-head" }, [
+          el("strong", { text: item.asset.name }),
+          el("b", { text: item.perMonthMinor !== null
+            ? (ru() ? `${money(item.perMonthMinor)}/мес` : `${money(item.perMonthMinor)}/mo`)
+            : money(item.totalMinor) })
+        ]),
+        el("small", { text: (() => {
+          const parts = [
+            ru() ? `всего ${money(item.totalMinor)}` : `${money(item.totalMinor)} in total`,
+            item.months ? (ru() ? `за ${countOf(item.months, PLURALS.month)}` : `over ${item.months} months`) : null,
+            item.annualSharePercent !== null
+              ? (ru() ? `${item.annualSharePercent.toFixed(1)}% от стоимости в год`
+                      : `${item.annualSharePercent.toFixed(1)}% of value a year`)
+              : null
+          ].filter(Boolean);
+          return parts.join(" · ");
+        })() }),
+        item.byCategory.length
+          ? el("small", { class: "upkeep-breakdown", text: item.byCategory
+              .map(([category, minor]) => `${categoryLabel("expense", category)} ${money(minor)}`)
+              .join(" · ") })
+          : null,
+        item.skipped
+          ? el("small", { class: "warn", text: ru()
+              ? `Не посчитано записей: ${item.skipped}.`
+              : `${item.skipped} records could not be counted.` })
+          : null
+      ]))),
+
+      el("p", { class: "panel-note", text: ru() ? ASSET_COST_NOTE.ru : ASSET_COST_NOTE.en })));
+  }
 
   page.append(panel("records-panel",
     panelHeader(ru() ? "ИМУЩЕСТВО" : "ASSETS", ru() ? "Ваши объекты" : "Your holdings"),

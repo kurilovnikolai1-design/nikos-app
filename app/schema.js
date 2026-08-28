@@ -137,7 +137,11 @@ export const TYPES = {
     defaultStatus: "confirmed", requires: ["amount"],
     categories: [c("living", "Жизнь и продукты", "Living"), c("housing", "Жильё и ЖКХ", "Housing"), c("mortgage", "Ипотека", "Mortgage"),
                  c("transport", "Транспорт", "Transport"), c("family", "Семья", "Family"), c("health", "Здоровье", "Health"),
-                 c("business", "Бизнес", "Business"), c("tax", "Налоги", "Tax"), c("subscription", "Подписки", "Subscriptions"), c("other", "Другое", "Other")]
+                 c("business", "Бизнес", "Business"), c("tax", "Налоги", "Tax"), c("subscription", "Подписки", "Subscriptions"),
+                 /* Insurance is neither housing nor transport: a policy on a car, a
+                    flat and a life are the same kind of spending and belong together. */
+                 c("insurance", "Страховки", "Insurance"), c("education", "Обучение", "Education"),
+                 c("other", "Другое", "Other")]
   },
   investment: {
     view: "investments", icon: "◇", role: BALANCE_ROLE.ASSET,
