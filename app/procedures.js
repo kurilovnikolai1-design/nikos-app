@@ -14,6 +14,8 @@
  * The full text is always kept alongside whatever was extracted, so nothing
  * depends on this file having understood the layout correctly. */
 
+import { localDate } from "./dates.js?v=20260827-172331";
+
 const MONTHS = {
   "январ": 1, "феврал": 2, "март": 3, "апрел": 4, "мая": 5, "май": 5, "июн": 6,
   "июл": 7, "август": 8, "сентябр": 9, "октябр": 10, "ноябр": 11, "декабр": 12
@@ -114,7 +116,7 @@ export function findFollowUp(text, from = null) {
     if (interval.unit === "year") next.setFullYear(next.getFullYear() + amount);
     else next.setMonth(next.getMonth() + amount);
 
-    return { date: next.toISOString().slice(0, 10), amount, unit: interval.unit, quote: sentence };
+    return { date: localDate(next), amount, unit: interval.unit, quote: sentence };
   }
   return null;
 }
@@ -151,7 +153,7 @@ export function toRecord(parsed, locale = "ru") {
     status: "confirmed",
     owner: "me",
     name: parsed.kind || (locale === "ru" ? "Исследование" : "Procedure"),
-    date: parsed.date || new Date().toISOString().slice(0, 10),
+    date: parsed.date || localDate(),
     details: parsed.conclusion
       ? `${locale === "ru" ? "Заключение" : "Conclusion"}: ${parsed.conclusion}\n\n${parsed.fullText}`
       : parsed.fullText,

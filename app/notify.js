@@ -20,10 +20,11 @@
  * record on a given day is remembered, so reopening the app five times does
  * not produce five copies of the same nudge. */
 
-import * as store from "./store.js?v=20260827-171447";
-import * as cloud from "./cloud.js?v=20260827-171447";
-import { TYPES } from "./schema.js?v=20260827-171447";
-import { t, getLocale, formatDate } from "./i18n.js?v=20260827-171447";
+import * as store from "./store.js?v=20260827-172331";
+import * as cloud from "./cloud.js?v=20260827-172331";
+import { TYPES } from "./schema.js?v=20260827-172331";
+import { t, getLocale, formatDate } from "./i18n.js?v=20260827-172331";
+import { localDate } from "./dates.js?v=20260827-172331";
 
 const SEEN_KEY = "nikos-notified";
 const ENABLED_KEY = "nikos-notify-enabled";
@@ -56,7 +57,7 @@ export async function requestPermission() {
 
 /* ---------- What is due ---------- */
 
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate();
 
 const daysUntil = (date) => {
   if (!date) return null;
@@ -111,7 +112,7 @@ export function markSeen(items) {
   for (const item of items) seen[seenKey(item)] = day;
 
   /* Forget anything older than a week so the key cannot grow without bound. */
-  const cutoff = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+  const cutoff = localDate(Date.now() - 7 * 86_400_000);
   for (const [key, when] of Object.entries(seen)) {
     if (when < cutoff) delete seen[key];
   }

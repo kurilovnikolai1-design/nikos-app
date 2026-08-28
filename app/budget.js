@@ -19,7 +19,8 @@
  *   excluded and why; that count is carried through, because "осталось 40 000"
  *   is a different statement when three expenses were not counted. */
 
-import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260827-171447";
+import { cashflow, periodRange, monthKey, monthlyEquivalentMinor } from "./finance.js?v=20260827-172331";
+import { localDate } from "./dates.js?v=20260827-172331";
 
 export const BUDGET_STATE = {
   UNSET: "unset",
@@ -151,7 +152,7 @@ export function budgetStatus(records, base, rates, settings, { now = new Date() 
     perDayMinor: Math.round(remainingMinor / daysLeft),
     excludedCount: flow.excludedCount,
     byCategory: flow.byCategory,
-    monthKey: monthKey(now.toISOString().slice(0, 10))
+    monthKey: monthKey(localDate(now))
   };
 }
 

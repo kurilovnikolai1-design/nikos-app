@@ -21,7 +21,8 @@
  *   later for ever. When lateness has pushed the next date into the past
  *   already, it advances until it is ahead — no backlog of phantom tasks. */
 
-import { FREQUENCY } from "./schema.js?v=20260827-171447";
+import { FREQUENCY } from "./schema.js?v=20260827-172331";
+import { localDate, fromDate } from "./dates.js?v=20260827-172331";
 
 const STEP = {
   weekly:    (date) => date.setDate(date.getDate() + 7),
@@ -40,7 +41,7 @@ export function nextOccurrence(fromISO, frequency, { now = new Date() } = {}) {
   const step = STEP[frequency];
   if (!step) return null;
 
-  const start = new Date(`${fromISO || now.toISOString().slice(0, 10)}T12:00:00`);
+  const start = fromDate(fromISO || localDate(now));
   if (Number.isNaN(start.getTime())) return null;
 
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
@@ -51,7 +52,7 @@ export function nextOccurrence(fromISO, frequency, { now = new Date() } = {}) {
     step(next);
     if (next > today) break;
   }
-  return next.toISOString().slice(0, 10);
+  return localDate(next);
 }
 
 /* The follow-up task for one that was just completed, or null when the record
@@ -59,7 +60,7 @@ export function nextOccurrence(fromISO, frequency, { now = new Date() } = {}) {
 export function nextTaskFrom(record, { now = new Date(), blank } = {}) {
   if (!isRepeating(record) || record.type !== "task") return null;
 
-  const dueOn = record.date || now.toISOString().slice(0, 10);
+  const dueOn = record.date || localDate(now);
   const date = nextOccurrence(dueOn, record.frequency, { now });
   if (!date) return null;
 
@@ -91,7 +92,7 @@ function offsetReminder(record, nextDate) {
   const offsetDays = Math.round((remind - due) / 86_400_000);
   const next = new Date(`${nextDate}T12:00:00`);
   next.setDate(next.getDate() + offsetDays);
-  return next.toISOString().slice(0, 10);
+  return localDate(next);
 }
 
 export const frequencyLabel = (key, locale = "ru") =>

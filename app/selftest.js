@@ -2,33 +2,35 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260827-171447";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-171447";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-171447";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, yearOverYear, EXCLUSION } from "./finance.js?v=20260827-171447";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-171447";
-import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-171447";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-171447";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-171447";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-171447";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-171447";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-171447";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-171447";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-171447";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-171447";
-import { parseReport } from "./procedures.js?v=20260827-171447";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260827-171447";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-171447";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-171447";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-171447";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-171447";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-171447";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-171447";
-import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260827-171447";
-import { parseStatement } from "./bank-import.js?v=20260827-171447";
-import { attachmentsOf } from "./attachments.js?v=20260827-171447";
-import { isSyncDue } from "./whoop.js?v=20260827-171447";
-import { assetsWithCosts } from "./asset-costs.js?v=20260827-171447";
+import { parseAmount, formatMoney } from "./money.js?v=20260827-172331";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260827-172331";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260827-172331";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, yearOverYear, EXCLUSION } from "./finance.js?v=20260827-172331";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260827-172331";
+import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260827-172331";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260827-172331";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260827-172331";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260827-172331";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260827-172331";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-172331";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260827-172331";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260827-172331";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260827-172331";
+import { parseReport } from "./procedures.js?v=20260827-172331";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260827-172331";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260827-172331";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260827-172331";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260827-172331";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260827-172331";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260827-172331";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260827-172331";
+import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260827-172331";
+import { parseStatement } from "./bank-import.js?v=20260827-172331";
+import { attachmentsOf } from "./attachments.js?v=20260827-172331";
+import { isSyncDue } from "./whoop.js?v=20260827-172331";
+import { assetsWithCosts } from "./asset-costs.js?v=20260827-172331";
+import { parseQuick } from "./quick-parse.js?v=20260827-172331";
+import { localDate, daysBetween, shiftDays, fromDate } from "./dates.js?v=20260827-172331";
 
 /* A goal must never add to net worth; the money is already counted where it sits. */
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
@@ -289,11 +291,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-171447")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260827-172331")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260827-171447")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260827-172331")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -302,14 +304,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260827-171447")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260827-172331")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260827-171447")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260827-172331")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -502,6 +504,61 @@ check("в месяц = всего / срок",
 check("доля от стоимости в год посчитана", camry.annualSharePercent > 0 && camry.annualSharePercent < 100);
 check("имущество без трат не показывается",
       assetsWithCosts([owned[0]], "RUB", RATES, { now: AT_COST }).length === 0);
+
+/* ---------- One line in, a record out ---------- */
+
+const QUICK_NOW = new Date("2026-08-27T12:00:00");
+const quick = (text) => parseQuick(text, { now: QUICK_NOW }).draft;
+
+check("сумма и категория из одной строки", (() => {
+  const d = quick("бензин 3500");
+  return d.type === "expense" && d.amountMinor === 3500_00 && d.category === "transport";
+})());
+
+/* The bug this guards: a date and an amount side by side used to merge into
+   one number, so "180000 25.08" became eighteen million. */
+const salary = quick("получил зарплату 180000 25.08");
+check("дата не приклеивается к сумме", salary.amountMinor === 180_000_00, String(salary.amountMinor));
+check("дата из «25.08» прочитана", salary.date === "2026-08-25");
+check("тип по глаголу «получил»", salary.type === "income");
+
+/* And this one:  does not work on Cyrillic, so relative days were ignored. */
+check("«вчера» сдвигает дату", quick("продукты 2 340,50 вчера").date === "2026-08-26");
+check("«позавчера» не читается как «вчера»", quick("позавчера кафе 890").date === "2026-08-25");
+check("слово даты убирается из названия", quick("продукты 2 340,50 вчера").name === "продукты");
+
+check("«20 августа» не оставляет хвоста", quick("аптека 1250 руб 20 августа").name === "аптека",
+      quick("аптека 1250 руб 20 августа").name);
+check("валютный знак не ломает сумму", quick("купил доллары 500 $").amountMinor === 500_00);
+check("множитель применяется", quick("продал акции 1,5м").amountMinor === 1_500_000_00);
+
+/* Numbers that are not prices must not become one. */
+const quickSet = quick("тренировка жим 100 на 5");
+check("вес в подходе не становится ценой", quickSet.amountMinor === undefined && quickSet.type === "workout");
+
+check("строка без денег — это заметка или задача",
+      ["note", "task"].includes(quick("надо позвонить подрядчику").type));
+check("пустая строка ничего не создаёт", parseQuick("") === null);
+
+/* ---------- Dates the owner actually lived ---------- */
+
+/* The bug: `new Date().toISOString().slice(0, 10)` is the UTC date, and it was
+   used in eleven places. In Moscow that is the previous day from midnight
+   until three in the morning — an expense logged at 00:30 got yesterday. */
+const atMidnightLocal = new Date(2026, 7, 28, 0, 30, 0);
+check("«сегодня» берётся по местному времени",
+      localDate(atMidnightLocal) === "2026-08-28",
+      `${localDate(atMidnightLocal)} — по UTC было бы 27-е`);
+
+check("день туда и обратно", shiftDays("2026-08-28", -1) === "2026-08-27");
+check("через месяц", shiftDays("2026-08-31", 1) === "2026-09-01");
+check("разница в днях", daysBetween("2026-08-27", "2026-09-03") === 7);
+check("разница знаковая", daysBetween("2026-09-03", "2026-08-27") === -7);
+check("мусорная дата не притворяется датой",
+      localDate("не дата") === null && fromDate("не дата") === null);
+check("дата разбирается на полдень, а не на полночь",
+      fromDate("2026-08-27").getHours() === 12,
+      "полночь стоит в часе от перевода часов, полдень — в двенадцати");
 
 /* ---------- Goals ---------- */
 

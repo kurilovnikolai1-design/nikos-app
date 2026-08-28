@@ -13,7 +13,8 @@
  * it actually sits, and counting it twice would inflate net worth — which is
  * why the schema gives this type no balance role. */
 
-import { valueInBase } from "./finance.js?v=20260827-171447";
+import { valueInBase } from "./finance.js?v=20260827-172331";
+import { localDate } from "./dates.js?v=20260827-172331";
 
 const DAY = 86_400_000;
 const MONTH_DAYS = 30.44;
@@ -52,7 +53,7 @@ export function goalProgress(record, base, rates, { now = new Date() } = {}) {
     return { record, state: GOAL_STATE.REACHED, targetMinor: target.minor, savedMinor, share: 1, remainingMinor: 0 };
   }
 
-  const today = now.toISOString().slice(0, 10);
+  const today = localDate(now);
 
   if (!record.targetDate) {
     return {

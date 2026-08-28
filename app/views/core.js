@@ -1,18 +1,19 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-171447";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-172331";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-171447";
-import { formatMoney } from "../money.js?v=20260827-171447";
-import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-171447";
-import { buildAttention } from "../attention.js?v=20260827-171447";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-171447";
-import { openRecordForm } from "../form.js?v=20260827-171447";
-import { navigate } from "../router.js?v=20260827-171447";
-import * as store from "../store.js?v=20260827-171447";
-import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-171447";
-import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-171447";
-import * as records from "../records.js?v=20260827-171447";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-172331";
+import { formatMoney } from "../money.js?v=20260827-172331";
+import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-172331";
+import { buildAttention } from "../attention.js?v=20260827-172331";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-172331";
+import { openRecordForm } from "../form.js?v=20260827-172331";
+import { navigate } from "../router.js?v=20260827-172331";
+import * as store from "../store.js?v=20260827-172331";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-172331";
+import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-172331";
+import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260827-172331";
+import * as records from "../records.js?v=20260827-172331";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -270,20 +271,69 @@ function projectLine(project) {
    add a task, log a workout — not "write a note and sort it out later". */
 export function openQuickAdd() {
   const choices = ["expense", "task", "income", "workout", "measurement", "note"];
+
+  /* One line first, tiles underneath. Typing "бензин 3500" is faster than
+     choosing a type and filling a form, and the tiles stay for the times when
+     there is nothing to type yet. */
+  const line = el("input", {
+    class: "form-control quick-line", type: "text", "data-autofocus": "true",
+    placeholder: ru() ? "бензин 3500 · зарплата 180000 вчера · надо позвонить" : "fuel 3500 · salary 180000 yesterday",
+    oninput: () => preview(),
+    onkeydown: (event) => { if (event.key === "Enter") { event.preventDefault(); accept(); } }
+  });
+
+  const read = el("div", { class: "quick-read" });
+
   const dialog = openDialog({
     title: t("app.quickAdd"),
-    subtitle: ru() ? "Что записываем?" : "What are we logging?",
+    subtitle: ru() ? "Одной строкой или выберите тип" : "One line, or pick a type",
     size: "narrow",
-    body: el("div", { class: "quick-grid" }, choices.map((type) =>
-      el("button", {
-        class: "quick-tile", type: "button",
-        onclick: () => { dialog.close(); openRecordForm(type, null, { onSaved: refresh }); }
-      }, [
-        el("span", { class: "quick-icon", text: iconFor(type) }),
-        el("span", { text: typeLabel(type) })
-      ])))
+    body: el("div", { class: "quick-body" }, [
+      line,
+      read,
+      el("div", { class: "quick-grid" }, choices.map((type) =>
+        el("button", {
+          class: "quick-tile", type: "button",
+          onclick: () => { dialog.close(); openRecordForm(type, null, { onSaved: refresh }); }
+        }, [
+          el("span", { class: "quick-icon", text: iconFor(type) }),
+          el("span", { text: typeLabel(type) })
+        ]))),
+      el("p", { class: "panel-note", text: ru() ? QUICK_NOTE.ru : QUICK_NOTE.en })
+    ])
   });
+
   return dialog;
+
+  function preview() {
+    read.textContent = "";
+    const parsed = parseQuick(line.value, { base: base(), now: new Date() });
+    if (!parsed) return;
+
+    const { draft } = parsed;
+    const bits = [
+      typeLabel(draft.type),
+      draft.amountMinor != null ? formatMoney(draft.amountMinor, draft.currency, getLocale()) : null,
+      draft.category ? categoryLabel(draft.type, draft.category) : null,
+      draft.date !== records.today() ? formatDate(draft.date, "medium") : null
+    ].filter(Boolean);
+
+    read.append(
+      el("strong", { text: draft.name }),
+      el("small", { text: bits.join(" · ") }),
+      el("button", { class: "primary-button", type: "button",
+                     text: ru() ? "Заполнить и открыть" : "Prefill and open", onclick: accept })
+    );
+  }
+
+  function accept() {
+    const parsed = parseQuick(line.value, { base: base(), now: new Date() });
+    if (!parsed) { line.focus(); return; }
+    dialog.close();
+    /* Opened, never saved silently: the point is speed, and speed that
+       produces records nobody looked at is how a ledger stops being trusted. */
+    openRecordForm(parsed.draft.type, null, { presets: parsed.draft, onSaved: refresh });
+  }
 }
 
 const iconFor = (type) => ({ expense: "↓", income: "↑", task: "✓", workout: "⚡", measurement: "◔", note: "✦" }[type] || "◈");

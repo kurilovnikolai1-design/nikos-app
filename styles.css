@@ -1219,6 +1219,19 @@ button.metric-card:hover { border-color: var(--border-strong); }
 .upkeep-breakdown { color: var(--muted) !important; }
 .upkeep-row small.warn { color: var(--warn) !important; }
 
+/* One line in, a record out: the line first, what was understood underneath. */
+.quick-body { display: grid; gap: 14px; }
+.quick-line { font-size: var(--step-md); }
+.quick-read:empty { display: none; }
+.quick-read {
+  display: grid; gap: 6px; justify-items: start;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.quick-read strong { font-size: var(--step-sm); overflow-wrap: anywhere; }
+.quick-read small { color: var(--faint); font-size: var(--step-xs); }
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }

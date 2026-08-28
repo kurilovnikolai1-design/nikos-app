@@ -14,10 +14,11 @@
  * arithmetic on dates. How long ago something was measured is a fact about a
  * calendar and is genuinely useful to the person reading it. */
 
-import { byAnalyte } from "./labs-parse.js?v=20260827-171447";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-171447";
-import { resolutions, resolutionState } from "./resolved.js?v=20260827-171447";
-import { routeFor } from "./lab-routing.js?v=20260827-171447";
+import { byAnalyte } from "./labs-parse.js?v=20260827-172331";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260827-172331";
+import { resolutions, resolutionState } from "./resolved.js?v=20260827-172331";
+import { routeFor } from "./lab-routing.js?v=20260827-172331";
+import { localDate } from "./dates.js?v=20260827-172331";
 
 const DAY = 86_400_000;
 const monthsSince = (date, now) =>
@@ -84,7 +85,7 @@ export function buildSummary(records, { locale = "ru", now = Date.now(), special
     .map((record) => record.date))].sort();
 
   return {
-    generatedAt: new Date(now).toISOString().slice(0, 10),
+    generatedAt: localDate(now),
     conditions,
     flagged,
     medication,

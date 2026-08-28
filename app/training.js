@@ -13,6 +13,7 @@
  * A comparison needs enough sessions to mean anything. Where there are not
  * enough, the trend is withheld rather than computed from two points — the
  * same rule the health observations follow. */
+import { localDate } from "./dates.js?v=20260827-172331";
 
 const MIN_SESSIONS_FOR_TREND = 3;
 const DAY = 86_400_000;
@@ -136,8 +137,8 @@ export function weeklyVolume(records, { weeks = 8, now = new Date() } = {}) {
   for (let offset = weeks - 1; offset >= 0; offset -= 1) {
     const from = new Date(thisWeek.getTime() - offset * 7 * DAY);
     const to = new Date(from.getTime() + 7 * DAY);
-    const fromISO = from.toISOString().slice(0, 10);
-    const toISO = to.toISOString().slice(0, 10);
+    const fromISO = localDate(from);
+    const toISO = localDate(to);
 
     let volume = 0;
     let sessions = 0;
@@ -155,7 +156,7 @@ export function weeklyVolume(records, { weeks = 8, now = new Date() } = {}) {
 /* A personal best that has just been set — a fact about the log, worth
    surfacing because it is the reason people keep one. */
 export function freshRecords(records, { withinDays = 30, now = new Date() } = {}) {
-  const cutoff = new Date(now.getTime() - withinDays * DAY).toISOString().slice(0, 10);
+  const cutoff = localDate(now.getTime() - withinDays * DAY);
 
   return byExercise(records)
     .filter((group) => group.heaviest && group.heaviest.date >= cutoff && group.count >= 2)

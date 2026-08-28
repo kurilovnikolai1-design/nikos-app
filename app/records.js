@@ -6,10 +6,11 @@
       localStorage and Supabase in one unconfirmed click.
    2. Nothing is saved until safety.inspectRecord() clears it. */
 
-import * as store from "./store.js?v=20260827-171447";
-import { inspectRecord } from "./safety.js?v=20260827-171447";
-import { parseAmount } from "./money.js?v=20260827-171447";
-import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-171447";
+import * as store from "./store.js?v=20260827-172331";
+import { inspectRecord } from "./safety.js?v=20260827-172331";
+import { parseAmount } from "./money.js?v=20260827-172331";
+import { TYPES, typeDef, categoriesOf, isVerified, COUNTS_AS_VERIFIED } from "./schema.js?v=20260827-172331";
+import { localDate } from "./dates.js?v=20260827-172331";
 
 export const TRASH_DAYS = 30;
 
@@ -94,10 +95,9 @@ export function blankRecord(type, { entered = false } = {}) {
   };
 }
 
-export const today = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-};
+/* One definition of "today", shared with every other module — see dates.js
+   for why the ISO-string shortcut is wrong three hours a night. */
+export const today = () => localDate();
 
 /* ---------- Validation ---------- */
 

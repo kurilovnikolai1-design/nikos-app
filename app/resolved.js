@@ -25,6 +25,8 @@
  * filled in from the analyte itself rather than typed, so the link cannot be
  * broken by a spelling difference. */
 
+import { localDate } from "./dates.js?v=20260827-172331";
+
 const isResolution = (record) =>
   record.type === "health"
   && !record.deletedAt
@@ -88,7 +90,7 @@ export function partitionByResolution(groups, records) {
 /* The draft for the record that marks a finding as treated. The form is opened
    with this rather than saved silently: what was treated, and when, is the
    owner's statement about his own care, not an inference from a number. */
-export function resolutionPreset(group, today = new Date().toISOString().slice(0, 10)) {
+export function resolutionPreset(group, today = localDate()) {
   return {
     category: "condition",
     status: "closed",
