@@ -13,8 +13,8 @@
  * it actually sits, and counting it twice would inflate net worth — which is
  * why the schema gives this type no balance role. */
 
-import { valueInBase } from "./finance.js?v=20260827-172331";
-import { localDate } from "./dates.js?v=20260827-172331";
+import { valueInBase } from "./finance.js?v=20260827-172643";
+import { localDate } from "./dates.js?v=20260827-172643";
 
 const DAY = 86_400_000;
 const MONTH_DAYS = 30.44;

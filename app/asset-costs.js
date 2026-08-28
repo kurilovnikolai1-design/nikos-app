@@ -19,7 +19,7 @@
  *   months would understate a car bought in March, so the divisor is the span
  *   between the first and last expense, and it is never less than a month. */
 
-import { valueInBase } from "./finance.js?v=20260827-172331";
+import { valueInBase } from "./finance.js?v=20260827-172643";
 
 const DAY = 86_400_000;
 const MONTH_DAYS = 30.44;

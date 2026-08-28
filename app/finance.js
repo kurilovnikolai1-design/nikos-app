@@ -5,9 +5,9 @@
    a month of income and expenses could be entered and the totals stayed empty
    because the default status excluded them. Nothing is dropped in silence now. */
 
-import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-172331";
-import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-172331";
-import { quoteFor } from "./quotes.js?v=20260827-172331";
+import { BALANCE_ROLE, TYPES, isLive, COUNTS_AS_VERIFIED, FREQUENCY } from "./schema.js?v=20260827-172643";
+import { convertMinor, cryptoValueMinorUsd, rubPerUnit } from "./rates.js?v=20260827-172643";
+import { quoteFor } from "./quotes.js?v=20260827-172643";
 
 export const EXCLUSION = {
   UNCONFIRMED: "unconfirmed",
@@ -226,6 +226,50 @@ export function yearOverYear(records, base, rates, { offset = 0 } = {}) {
     incomeChangePercent: change(now.incomeMinor, then.incomeMinor),
     expenseDeltaMinor: now.expenseMinor - then.expenseMinor,
     incomeDeltaMinor: now.incomeMinor - then.incomeMinor
+  };
+}
+
+/* Whose money moved.
+ *
+ * The `owner` field has been on every money record since the rebuild and
+ * nothing ever grouped by it, so "сколько мы тратим вместе" had no answer
+ * despite the data being right there. This is that grouping and nothing more:
+ * no split, no settling up, no claim about who owes whom.
+ *
+ * Records with no owner are reported separately rather than folded into "me",
+ * because an unanswered question and an answer are different things. */
+export function byOwner(records, base, rates, range) {
+  const flow = cashflow(records, base, rates, range);
+  const buckets = new Map();
+
+  const add = (record, minor, kind) => {
+    const key = record.owner || "unset";
+    if (!buckets.has(key)) buckets.set(key, { owner: key, incomeMinor: 0, expenseMinor: 0, count: 0 });
+    const bucket = buckets.get(key);
+    bucket[kind] += minor;
+    bucket.count += 1;
+  };
+
+  for (const record of flow.expenseRecords) {
+    if (!COUNTS_AS_VERIFIED.has(record.status)) continue;
+    const value = valueInBase(record, base, rates);
+    if (value.minor !== null) add(record, value.minor, "expenseMinor");
+  }
+  for (const record of flow.incomeRecords) {
+    if (!COUNTS_AS_VERIFIED.has(record.status)) continue;
+    const value = valueInBase(record, base, rates);
+    if (value.minor !== null) add(record, value.minor, "incomeMinor");
+  }
+
+  const list = [...buckets.values()].sort((a, b) => b.expenseMinor - a.expenseMinor);
+
+  return {
+    list,
+    /* Only worth showing when more than one person appears — otherwise it is
+       a breakdown of one bar. */
+    meaningful: list.filter((bucket) => bucket.owner !== "unset").length > 1,
+    totalExpenseMinor: flow.expenseMinor,
+    totalIncomeMinor: flow.incomeMinor
   };
 }
 

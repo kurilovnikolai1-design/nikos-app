@@ -1,22 +1,22 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-172331";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-172643";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         plural, PLURALS, formatNumber, typeLabel, frequencyLabel } from "../i18n.js?v=20260827-172331";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-172331";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear } from "../finance.js?v=20260827-172331";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-172331";
-import { refreshRates } from "../main-rates.js?v=20260827-172331";
-import { openBankImport } from "../csv.js?v=20260827-172331";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-172331";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-172331";
-import { QUOTES_NOTE } from "../quotes.js?v=20260827-172331";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-172331";
-import { isVerified } from "../schema.js?v=20260827-172331";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-172331";
-import { openRecordForm } from "../form.js?v=20260827-172331";
-import * as store from "../store.js?v=20260827-172331";
-import * as records from "../records.js?v=20260827-172331";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel, ownerLabel } from "../i18n.js?v=20260827-172643";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260827-172643";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear, byOwner } from "../finance.js?v=20260827-172643";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260827-172643";
+import { refreshRates } from "../main-rates.js?v=20260827-172643";
+import { openBankImport } from "../csv.js?v=20260827-172643";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260827-172643";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260827-172643";
+import { QUOTES_NOTE } from "../quotes.js?v=20260827-172643";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260827-172643";
+import { isVerified } from "../schema.js?v=20260827-172643";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260827-172643";
+import { openRecordForm } from "../form.js?v=20260827-172643";
+import * as store from "../store.js?v=20260827-172643";
+import * as records from "../records.js?v=20260827-172643";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -560,6 +560,29 @@ export function cashflowView() {
       el("p", { class: "panel-note", text: ru()
         ? "Суммы приведены к месяцу: годовой платёж делится на двенадцать, недельный умножается."
         : "Amounts are shown per month: a yearly payment is divided by twelve, a weekly one multiplied." })));
+  }
+
+  /* Whose money it was. The field has existed since the rebuild and nothing
+     ever grouped by it, so "сколько мы тратим вместе" had no answer. */
+  const owners = byOwner(all, base(), store.getRates(), range);
+  if (owners.meaningful) {
+    const max = Math.max(...owners.list.map((bucket) => bucket.expenseMinor), 1);
+    page.append(panel("breakdown-panel owner-panel",
+      panelHeader(ru() ? "ЧЬИ ДЕНЬГИ" : "WHOSE MONEY", ru() ? "Расходы за период" : "Spending in the period"),
+      el("div", { class: "breakdown-list" }, owners.list.map((bucket) => el("div", { class: "breakdown-row" }, [
+        el("span", { class: "breakdown-label", text: bucket.owner === "unset"
+          ? (ru() ? "Не указано" : "Unassigned")
+          : ownerLabel(bucket.owner) }),
+        el("span", { class: "breakdown-bar" }, [
+          el("i", { style: `width:${Math.max(3, Math.round((bucket.expenseMinor / max) * 100))}%` })
+        ]),
+        el("b", { text: money(bucket.expenseMinor) })
+      ]))),
+      owners.list.some((bucket) => bucket.owner === "unset")
+        ? el("p", { class: "panel-note", text: ru()
+            ? "«Не указано» — записи, у которых не проставлено, чьи это деньги."
+            : "\"Unassigned\" are records with no owner set." })
+        : null));
   }
 
   if (flow.byCategory.length) {

@@ -1,19 +1,20 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-172331";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-172643";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-172331";
-import { formatMoney } from "../money.js?v=20260827-172331";
-import { netWorth, periodRange, sportSummary, inRange } from "../finance.js?v=20260827-172331";
-import { buildAttention } from "../attention.js?v=20260827-172331";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-172331";
-import { openRecordForm } from "../form.js?v=20260827-172331";
-import { navigate } from "../router.js?v=20260827-172331";
-import * as store from "../store.js?v=20260827-172331";
-import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-172331";
-import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-172331";
-import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260827-172331";
-import * as records from "../records.js?v=20260827-172331";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260827-172643";
+import { formatMoney } from "../money.js?v=20260827-172643";
+import { netWorth, periodRange, sportSummary, inRange, valueInBase } from "../finance.js?v=20260827-172643";
+import { buildAttention } from "../attention.js?v=20260827-172643";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260827-172643";
+import { openRecordForm } from "../form.js?v=20260827-172643";
+import { navigate } from "../router.js?v=20260827-172643";
+import { isVerified } from "../schema.js?v=20260827-172643";
+import * as store from "../store.js?v=20260827-172643";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260827-172643";
+import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260827-172643";
+import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260827-172643";
+import * as records from "../records.js?v=20260827-172643";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -98,6 +99,10 @@ export function commandView() {
       ? (ru() ? "Считаются только подтверждённые записи." : "Only confirmed records are counted.")
       : t("cmd.noBalances") }),
     worth.hasAnything ? allocation(worth) : null,
+
+    /* Debt, and who it is to. Net worth already subtracts it, but a single
+       number hides whether it is one mortgage or five people waiting. */
+    worth.buckets.liability > 0 ? debtLine() : null,
     el("div", { class: "panel-footer" }, [
       el("span", { class: "confidence-label" }, [
         el("span", { class: `status-dot ${worth.confidence >= 80 ? "green" : "amber-dot"}` }),
@@ -337,6 +342,32 @@ export function openQuickAdd() {
 }
 
 const iconFor = (type) => ({ expense: "↓", income: "↑", task: "✓", workout: "⚡", measurement: "◔", note: "✦" }[type] || "◈");
+
+/* Who is owed, largest first. Only counted debts, so this can never disagree
+   with the net worth figure directly above it. */
+function debtLine() {
+  const owed = store.liveRecords()
+    .filter((record) => record.type === "payable" && isVerified(record))
+    .map((record) => ({ record, minor: valueInBase(record, base(), store.getRates()).minor }))
+    .filter((entry) => entry.minor !== null)
+    .sort((a, b) => b.minor - a.minor);
+
+  if (!owed.length) return null;
+
+  const total = owed.reduce((sum, entry) => sum + entry.minor, 0);
+  const named = owed.slice(0, 3)
+    .map((entry) => `${entry.record.counterparty || entry.record.name} ${formatMoney(entry.minor, base(), getLocale())}`)
+    .join(" · ");
+
+  return el("div", { class: "debt-line" }, [
+    el("span", { class: "debt-total", text: ru()
+      ? `Должен ${formatMoney(total, base(), getLocale())}`
+      : `You owe ${formatMoney(total, base(), getLocale())}` }),
+    el("small", { text: owed.length > 3
+      ? `${named} ${ru() ? `и ещё ${owed.length - 3}` : `and ${owed.length - 3} more`}`
+      : named })
+  ]);
+}
 
 /* ---------- Inbox ---------- */
 
