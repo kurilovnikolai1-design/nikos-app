@@ -50,7 +50,13 @@ const run = async (mode, work) => {
     const store = transaction.objectStore(STORE);
     let result;
     try { result = work(store); } catch (error) { reject(error); return; }
-    transaction.oncomplete = () => resolve(result?.result ?? result);
+    /* `result?.result ?? result` looked equivalent and was not: a request whose
+       result is genuinely undefined — a missing key, a delete — fell through to
+       the request object itself, which is truthy. So `if (await get(key))` was
+       true for keys that did not exist, and restoring files from a backup
+       skipped every one of them as "already present". */
+    transaction.oncomplete = () => resolve(
+      result instanceof IDBRequest ? result.result : result);
     transaction.onerror = () => reject(transaction.error);
     transaction.onabort = () => reject(transaction.error ?? new Error("transaction aborted"));
   });

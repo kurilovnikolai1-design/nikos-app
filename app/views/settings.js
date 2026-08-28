@@ -1,20 +1,21 @@
 /* Settings: security, backups, rates, sync, appearance, trash, diagnostics. */
 
-import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-150820";
-import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-150820";
-import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-150820";
-import { refresh, pageHeading, recordList } from "../render.js?v=20260827-150820";
-import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-150820";
-import * as lock from "../lock.js?v=20260827-150820";
-import * as persist from "../persist.js?v=20260827-150820";
-import * as store from "../store.js?v=20260827-150820";
-import * as records from "../records.js?v=20260827-150820";
-import * as cloud from "../cloud.js?v=20260827-150820";
-import * as notify from "../notify.js?v=20260827-150820";
-import * as backups from "../backups.js?v=20260827-150820";
-import { refreshRates } from "../main-rates.js?v=20260827-150820";
-import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-150820";
-import { whoopRow } from "../whoop.js?v=20260827-150820";
+import { el, panel, panelHeader, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260827-171138";
+import { t, getLocale, setLocale, formatDate, countOf, plural, PLURALS, typeLabel, categoryLabel } from "../i18n.js?v=20260827-171138";
+import { CURRENCY_CODES, CURRENCIES, formatMoney } from "../money.js?v=20260827-171138";
+import { refresh, pageHeading, recordList } from "../render.js?v=20260827-171138";
+import { SOURCES, sourceLabel, isStale, COINS } from "../rates.js?v=20260827-171138";
+import * as lock from "../lock.js?v=20260827-171138";
+import * as persist from "../persist.js?v=20260827-171138";
+import * as store from "../store.js?v=20260827-171138";
+import * as records from "../records.js?v=20260827-171138";
+import * as cloud from "../cloud.js?v=20260827-171138";
+import * as notify from "../notify.js?v=20260827-171138";
+import * as backups from "../backups.js?v=20260827-171138";
+import * as attachments from "../attachments.js?v=20260827-171138";
+import { refreshRates } from "../main-rates.js?v=20260827-171138";
+import { loadDemoData, clearDemoData, countDemo, isDemoRecord } from "../demo.js?v=20260827-171138";
+import { whoopRow } from "../whoop.js?v=20260827-171138";
 
 const ru = () => getLocale() === "ru";
 
@@ -454,6 +455,21 @@ export function settingsView() {
 
   async function downloadBackup() {
     const payload = store.exportVault();
+
+    /* Files come too. A vault without its scans is half a backup, and the half
+       that is missing is the half that cannot be retyped. */
+    const bundled = await attachments.exportFiles(payload.records || []);
+    if (bundled.count) {
+      payload.files = bundled.files;
+      payload.filesNote = "base64; восстанавливаются вместе с записями";
+    }
+    if (bundled.unreadable) {
+      toast(ru()
+        ? `${bundled.unreadable} файлов не прочитались — если стоит PIN, разблокируйте и повторите.`
+        : `${bundled.unreadable} files could not be read — unlock first and try again.`,
+        { tone: "warn", duration: 7000 });
+    }
+
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -463,7 +479,10 @@ export function settingsView() {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
     await store.updateSettings({ lastBackupAt: new Date().toISOString() });
-    toast(ru() ? "Резервная копия скачана" : "Backup downloaded", { tone: "success" });
+    toast(ru()
+      ? `Копия скачана${bundled.count ? `, включая ${countOf(bundled.count, PLURALS.file)} · ${attachments.describeSize(bundled.bytes, "ru")}` : ""}. Храните её вне телефона.`
+      : `Backup downloaded${bundled.count ? ` with ${bundled.count} files` : ""}. Keep it off the phone.`,
+      { tone: "success", duration: 6000 });
   }
 
   function restoreBackup() {
@@ -483,6 +502,19 @@ export function settingsView() {
 
         const migrated = records.migrateAll(incoming);
         const existing = store.allRecords().length;
+
+        /* Files first: a record pointing at bytes that have not arrived yet
+           shows "файл не найден", and the owner would reasonably conclude the
+           restore failed. */
+        if (parsed?.files) {
+          const back = await attachments.importFiles(parsed.files);
+          if (back.restored || back.failed) {
+            toast(ru()
+              ? `Файлов восстановлено: ${back.restored}${back.failed ? `, не удалось: ${back.failed}` : ""}`
+              : `${back.restored} files restored${back.failed ? `, ${back.failed} failed` : ""}`,
+              { tone: back.failed ? "warn" : "info" });
+          }
+        }
 
         /* Replacing everything is right for restoring a backup and wrong for
            bringing in a decade of lab history — that would silently delete the
@@ -798,7 +830,7 @@ export function settingsView() {
       el("button", { class: "ghost-button", type: "button", text: ru() ? "Запустить проверку" : "Run self-test",
                      onclick: async () => {
                        output.textContent = ru() ? "Проверяю…" : "Running…";
-                       const suite = await import("../selftest.js?v=20260827-150820");
+                       const suite = await import("../selftest.js?v=20260827-171138");
                        const cryptoFailures = await lock.selfTest();
                        const all = [...suite.results.failures, ...cryptoFailures];
                        output.textContent = all.length

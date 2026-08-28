@@ -15,8 +15,8 @@
  * vault is not — or the reverse — would be a promise broken in one direction
  * or a nuisance in the other. */
 
-import * as idb from "./idb.js?v=20260827-150820";
-import * as lock from "./lock.js?v=20260827-150820";
+import * as idb from "./idb.js?v=20260827-171138";
+import * as lock from "./lock.js?v=20260827-171138";
 
 const PREFIX = "file:";
 
@@ -212,4 +212,66 @@ export function describeSize(bytes, locale = "ru") {
   while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit += 1; }
   const rounded = value >= 100 || unit === 0 ? Math.round(value) : Number(value.toFixed(1));
   return `${String(rounded).replace(".", locale === "ru" ? "," : ".")} ${units[unit]}`;
+}
+
+/* ---------- Taking the files with you ---------- */
+
+/* The exported vault has always been records only. That is a backup of half
+   the data: a discharge summary is not a row in a table, and losing the phone
+   loses every scan while the JSON sits safely in Downloads.
+ *
+ * So the bytes come too, base64-encoded, in the same file. Base64 costs a
+ * third in size, and a single file that restores completely is worth more
+ * than a smaller one that restores partially.
+ *
+ * Encrypted files are exported decrypted. Anything else would produce an
+ * archive that only opens on a device holding the current key, which is
+ * exactly the device the backup exists to survive. The file is the owner's to
+ * keep somewhere safe — that is stated plainly wherever it is offered. */
+
+export async function exportFiles(records) {
+  if (!idb.isSupported()) return { files: {}, count: 0, bytes: 0, unreadable: 0 };
+
+  const files = {};
+  let bytes = 0;
+  let unreadable = 0;
+
+  for (const record of records) {
+    for (const descriptor of attachmentsOf(record)) {
+      if (files[descriptor.id]) continue;
+      const blob = await loadFile(descriptor);
+      if (!blob) { unreadable += 1; continue; }
+      const buffer = await blob.arrayBuffer();
+      files[descriptor.id] = { name: descriptor.name, mime: descriptor.mime, data: toBase64(buffer) };
+      bytes += buffer.byteLength;
+    }
+  }
+
+  return { files, count: Object.keys(files).length, bytes, unreadable };
+}
+
+/* Put them back. Existing ids are left alone rather than overwritten: a
+   restore should not clobber a file the current device already holds. */
+export async function importFiles(files) {
+  if (!idb.isSupported() || !files) return { restored: 0, skipped: 0, failed: 0 };
+
+  let restored = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const [id, payload] of Object.entries(files)) {
+    try {
+      if (await idb.get(PREFIX + id)) { skipped += 1; continue; }
+      const buffer = fromBase64(payload.data);
+      const key = lock.getSessionKey();
+      await idb.put(PREFIX + id, key
+        ? { sealed: true, envelope: await lock.sealWithKey(toBase64(buffer), key) }
+        : { sealed: false, bytes: buffer });
+      restored += 1;
+    } catch {
+      failed += 1;
+    }
+  }
+
+  return { restored, skipped, failed };
 }

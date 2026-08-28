@@ -16,8 +16,8 @@
  * already taken off the table needs a record of the sale, which is a
  * different thing and is not invented here. */
 
-import { valueInBase } from "./finance.js?v=20260827-150820";
-import { convertMinor } from "./rates.js?v=20260827-150820";
+import { valueInBase } from "./finance.js?v=20260827-171138";
+import { convertMinor } from "./rates.js?v=20260827-171138";
 
 export const PNL_STATE = {
   NO_COST: "no-cost",       /* nothing to compare against */

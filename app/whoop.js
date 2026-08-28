@@ -6,10 +6,10 @@
    a manual backfill. Nothing here can leak a credential, because nothing here
    ever sees one. */
 
-import { el, toast, confirmDialog } from "./ui.js?v=20260827-150820";
-import { t, getLocale, formatDate } from "./i18n.js?v=20260827-150820";
-import * as cloud from "./cloud.js?v=20260827-150820";
-import * as store from "./store.js?v=20260827-150820";
+import { el, toast, confirmDialog } from "./ui.js?v=20260827-171138";
+import { t, getLocale, formatDate } from "./i18n.js?v=20260827-171138";
+import * as cloud from "./cloud.js?v=20260827-171138";
+import * as store from "./store.js?v=20260827-171138";
 
 const ru = () => getLocale() === "ru";
 

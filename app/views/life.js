@@ -1,28 +1,28 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-150820";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260827-171138";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-150820";
-import { formatMoney } from "../money.js?v=20260827-150820";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-150820";
-import { categoriesOf } from "../schema.js?v=20260827-150820";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-150820";
-import { openRecordForm } from "../form.js?v=20260827-150820";
-import { navigate } from "../router.js?v=20260827-150820";
-import { importCsv } from "../csv.js?v=20260827-150820";
-import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-150820";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-150820";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-150820";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-150820";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-150820";
-import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-150820";
-import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-150820";
-import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260827-150820";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-150820";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-150820";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-150820";
-import * as store from "../store.js?v=20260827-150820";
-import * as records from "../records.js?v=20260827-150820";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260827-171138";
+import { formatMoney } from "../money.js?v=20260827-171138";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260827-171138";
+import { categoriesOf } from "../schema.js?v=20260827-171138";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260827-171138";
+import { openRecordForm } from "../form.js?v=20260827-171138";
+import { navigate } from "../router.js?v=20260827-171138";
+import { importCsv } from "../csv.js?v=20260827-171138";
+import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260827-171138";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260827-171138";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260827-171138";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260827-171138";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260827-171138";
+import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260827-171138";
+import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260827-171138";
+import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260827-171138";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260827-171138";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260827-171138";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260827-171138";
+import * as store from "../store.js?v=20260827-171138";
+import * as records from "../records.js?v=20260827-171138";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
