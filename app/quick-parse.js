@@ -14,8 +14,8 @@
  * The record is never saved silently. The whole point is speed, and speed
  * that produces records nobody checked is how a ledger becomes untrustworthy. */
 
-import { parseAmount } from "./money.js?v=20260828-003727";
-import { localDate } from "./dates.js?v=20260828-003727";
+import { parseAmount } from "./money.js?v=20260828-004404";
+import { localDate } from "./dates.js?v=20260828-004404";
 
 const DAY = 86_400_000;
 

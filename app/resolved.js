@@ -25,7 +25,7 @@
  * filled in from the analyte itself rather than typed, so the link cannot be
  * broken by a spelling difference. */
 
-import { localDate } from "./dates.js?v=20260828-003727";
+import { localDate } from "./dates.js?v=20260828-004404";
 
 const isResolution = (record) =>
   record.type === "health"

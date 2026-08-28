@@ -2,35 +2,36 @@
    what counts toward net worth, and migration of records written by the
    previous build. Run with `node app/selftest.js`, and from Settings in the app. */
 
-import { parseAmount, formatMoney } from "./money.js?v=20260828-003727";
-import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260828-003727";
-import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260828-003727";
-import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, yearOverYear, byOwner, monthlyEquivalentMinor, EXCLUSION } from "./finance.js?v=20260828-003727";
-import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260828-003727";
-import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260828-003727";
-import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260828-003727";
-import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260828-003727";
-import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260828-003727";
-import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260828-003727";
-import { conditionPanels, knownConditions } from "./conditions.js?v=20260828-003727";
-import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260828-003727";
-import { describeSize, MAX_BYTES } from "./attachments.js?v=20260828-003727";
-import { dueReminders, describe as describeReminder } from "./notify.js?v=20260828-003727";
-import { parseReport } from "./procedures.js?v=20260828-003727";
-import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260828-003727";
-import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260828-003727";
-import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260828-003727";
-import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260828-003727";
-import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260828-003727";
-import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260828-003727";
-import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260828-003727";
-import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260828-003727";
-import { parseStatement } from "./bank-import.js?v=20260828-003727";
-import { attachmentsOf } from "./attachments.js?v=20260828-003727";
-import { isSyncDue } from "./whoop.js?v=20260828-003727";
-import { assetsWithCosts } from "./asset-costs.js?v=20260828-003727";
-import { parseQuick } from "./quick-parse.js?v=20260828-003727";
-import { localDate, daysBetween, shiftDays, fromDate } from "./dates.js?v=20260828-003727";
+import { parseAmount, formatMoney } from "./money.js?v=20260828-004404";
+import { assertSchemaIsSound, TYPES } from "./schema.js?v=20260828-004404";
+import { selfTest as safetySelfTest, inspectValue } from "./safety.js?v=20260828-004404";
+import { netWorth, cashflow, periodRange, recurringLoad, sportSummary, yearOverYear, byOwner, monthlyEquivalentMinor, EXCLUSION } from "./finance.js?v=20260828-004404";
+import { convertMinor, rubPerUnit, cryptoValueMinorUsd } from "./rates.js?v=20260828-004404";
+import { migrateRecord, migrateAll, blankRecord, confirmedStatusFor } from "./records.js?v=20260828-004404";
+import { parseLabText, rangeVerdict, guessDate, guessLab } from "./labs-parse.js?v=20260828-004404";
+import { VIEWS as ROUTER_VIEWS } from "./router.js?v=20260828-004404";
+import { routeFor, groupBySpecialist } from "./lab-routing.js?v=20260828-004404";
+import { describe as describeAnalyte } from "./lab-descriptions.js?v=20260828-004404";
+import { conditionPanels, knownConditions } from "./conditions.js?v=20260828-004404";
+import { partitionByResolution, resolutions, resolutionState } from "./resolved.js?v=20260828-004404";
+import { describeSize, MAX_BYTES } from "./attachments.js?v=20260828-004404";
+import { dueReminders, describe as describeReminder } from "./notify.js?v=20260828-004404";
+import { parseReport } from "./procedures.js?v=20260828-004404";
+import { budgetStatus, BUDGET_STATE, typicalMonthlySpend, committedAhead } from "./budget.js?v=20260828-004404";
+import { goalsOverview, goalProgress, GOAL_STATE, totalOutstanding } from "./goals.js?v=20260828-004404";
+import { portfolio as positionBook, positionPnl, PNL_STATE } from "./positions.js?v=20260828-004404";
+import { quoteKey, quoteFor, MARKET } from "./quotes.js?v=20260828-004404";
+import { byExercise, weeklyVolume, freshRecords, setsOf } from "./training.js?v=20260828-004404";
+import { projectsWithMoney, projectTotals } from "./project-money.js?v=20260828-004404";
+import { nextOccurrence, nextTaskFrom, isRepeating } from "./recurrence.js?v=20260828-004404";
+import { isDue, KEEP, EVERY_DAYS } from "./backups.js?v=20260828-004404";
+import { parseStatement } from "./bank-import.js?v=20260828-004404";
+import { attachmentsOf } from "./attachments.js?v=20260828-004404";
+import { isSyncDue } from "./whoop.js?v=20260828-004404";
+import { assetsWithCosts } from "./asset-costs.js?v=20260828-004404";
+import { parseQuick } from "./quick-parse.js?v=20260828-004404";
+import { localDate, daysBetween, shiftDays, fromDate } from "./dates.js?v=20260828-004404";
+import { secondOnly, total as withSecond, canShowSecond } from "./display.js?v=20260828-004404";
 
 /* A goal must never add to net worth; the money is already counted where it sits. */
 const TYPES_ROLE_NONE = (type) => TYPES[type]?.role === "none";
@@ -315,11 +316,11 @@ const positiveOnly = [
   { id: "p1", type: "lab", name: H_PYLORI, value: 16.7, unit: "‰", refHigh: 4, date: "2026-04-21" }
 ];
 const beforeMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260828-003727")).byAnalyte(positiveOnly), positiveOnly);
+  (await import("./labs-parse.js?v=20260828-004404")).byAnalyte(positiveOnly), positiveOnly);
 check("без пометки отклонение активно", beforeMarking.active.length === 1);
 
 const afterMarking = partitionByResolution(
-  (await import("./labs-parse.js?v=20260828-003727")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
+  (await import("./labs-parse.js?v=20260828-004404")).byAnalyte(positiveOnly), [...positiveOnly, treated]);
 check("пролеченное уходит из активных", afterMarking.active.length === 0);
 check("пролеченное не исчезает совсем", afterMarking.resolved.length === 1,
       "запись обязана остаться видимой");
@@ -328,14 +329,14 @@ check("без пересдачи — так и сказано", afterMarking.res
 /* A later result that is still out of range overrides the resolution. */
 const relapsed = [...positiveOnly, treated,
   { id: "p2", type: "lab", name: H_PYLORI, value: 12.1, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const after = partitionByResolution((await import("./labs-parse.js?v=20260828-003727")).byAnalyte(relapsed), relapsed);
+const after = partitionByResolution((await import("./labs-parse.js?v=20260828-004404")).byAnalyte(relapsed), relapsed);
 check("новый плохой результат отменяет пометку", after.active.length === 1,
       "пометка не должна переживать противоречащий ей результат");
 
 /* A later result inside the range confirms it. */
 const cleared = [...positiveOnly, treated,
   { id: "p3", type: "lab", name: H_PYLORI, value: 1.2, unit: "‰", refHigh: 4, date: "2026-07-01" }];
-const done = partitionByResolution((await import("./labs-parse.js?v=20260828-003727")).byAnalyte(cleared), cleared);
+const done = partitionByResolution((await import("./labs-parse.js?v=20260828-004404")).byAnalyte(cleared), cleared);
 check("пересдача в норме подтверждает", done.resolved[0]?.state.confirmed === true);
 
 check("пролеченное не считается активным состоянием",
@@ -607,6 +608,19 @@ check("без владельца — отдельная строка, а не «
 check("неподтверждённое не попадает ни к кому", mine?.expenseMinor !== 139_000_00);
 check("разбивка на одного человека не показывается",
       byOwner([household[0]], "RUB", RATES, periodRange("month", 0)).meaningful === false);
+
+/* ---------- The same total, also in dollars ---------- */
+
+/* These read the store for the base currency and the rates, so they only work
+   inside the app. What can be checked here is the arithmetic-free rules: no
+   bracket on nothing, no bracket on zero. */
+check("пустая сумма не получает скобку", secondOnly(null) === null);
+check("ноль не получает скобку", secondOnly(0) === null,
+      "«(0 $)» рядом с «0 ₽» — это шум, а не информация");
+check("без курса скобки нет", canShowSecond() === false || secondOnly(100) !== null,
+      "перевод без курса показывать нельзя");
+check("итог без второй валюты остаётся числом",
+      typeof withSecond(100) === "string" && withSecond(100).length > 0);
 
 /* ---------- Goals ---------- */
 

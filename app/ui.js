@@ -5,7 +5,7 @@
    into the page behind an open form, and on a phone the background scrolled
    under it. One implementation here fixes all of that in one place. */
 
-import { t } from "./i18n.js?v=20260828-003727";
+import { t } from "./i18n.js?v=20260828-004404";
 
 export const $ = (selector, scope = document) => scope.querySelector(selector);
 export const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
@@ -187,7 +187,10 @@ export const emptyState = (message, actionLabel = null, onAction = null) =>
     actionLabel && onAction ? el("button", { class: "text-button", type: "button", text: `${actionLabel} →`, onclick: onAction }) : null
   ]);
 
-export const metricCard = ({ kicker, value, note, tone = "", onClick = null }) =>
+/* `second` is the same total in another currency. It sits under the figure in
+   brackets rather than beside it, so it never competes with the number it is
+   explaining — and it is simply absent when there is no rate to convert with. */
+export const metricCard = ({ kicker, value, note, second = null, tone = "", onClick = null }) =>
   el(onClick ? "button" : "div", {
     class: `metric-card ${tone}`.trim(),
     type: onClick ? "button" : null,
@@ -195,6 +198,7 @@ export const metricCard = ({ kicker, value, note, tone = "", onClick = null }) =
   }, [
     el("span", { class: "panel-kicker", text: kicker }),
     el("strong", { text: value }),
+    second ? el("span", { class: "metric-second", text: `(${second})` }) : null,
     note ? el("small", { text: note }) : null
   ]);
 

@@ -9,14 +9,14 @@
    Parsing runs entirely in the browser. The text of a medical report is never
    uploaded, which is the whole reason this is a paste box and not a service. */
 
-import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260828-003727";
-import { t, getLocale, formatDate, categoryLabel } from "./i18n.js?v=20260828-003727";
-import { categoriesOf } from "./schema.js?v=20260828-003727";
-import { parseLabText, guessDate, guessLab, rangeVerdict, labPanels, analyteHistory, byAnalyte, currentlyOutOfRange } from "./labs-parse.js?v=20260828-003727";
-import * as store from "./store.js?v=20260828-003727";
-import * as records from "./records.js?v=20260828-003727";
-import { parseReport, toRecord, PROCEDURE_NOTE } from "./procedures.js?v=20260828-003727";
-import { openRecordForm } from "./form.js?v=20260828-003727";
+import { el, openDialog, toast, confirmDialog } from "./ui.js?v=20260828-004404";
+import { t, getLocale, formatDate, categoryLabel } from "./i18n.js?v=20260828-004404";
+import { categoriesOf } from "./schema.js?v=20260828-004404";
+import { parseLabText, guessDate, guessLab, rangeVerdict, labPanels, analyteHistory, byAnalyte, currentlyOutOfRange } from "./labs-parse.js?v=20260828-004404";
+import * as store from "./store.js?v=20260828-004404";
+import * as records from "./records.js?v=20260828-004404";
+import { parseReport, toRecord, PROCEDURE_NOTE } from "./procedures.js?v=20260828-004404";
+import { openRecordForm } from "./form.js?v=20260828-004404";
 
 const ru = () => getLocale() === "ru";
 

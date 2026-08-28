@@ -1,29 +1,30 @@
 /* Assets, Health & sport, Documents, People, Decisions, Timeline. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260828-003727";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260828-004404";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260828-003727";
-import { formatMoney } from "../money.js?v=20260828-003727";
-import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260828-003727";
-import { categoriesOf } from "../schema.js?v=20260828-003727";
-import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260828-003727";
-import { openRecordForm } from "../form.js?v=20260828-003727";
-import { navigate } from "../router.js?v=20260828-003727";
-import { importCsv } from "../csv.js?v=20260828-003727";
-import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260828-003727";
-import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260828-003727";
-import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260828-003727";
-import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260828-003727";
-import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260828-003727";
-import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260828-003727";
-import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260828-003727";
-import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260828-003727";
-import { assetsWithCosts, ASSET_COST_NOTE } from "../asset-costs.js?v=20260828-003727";
-import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260828-003727";
-import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260828-003727";
-import { healthInsights, DISCLAIMER } from "../insights.js?v=20260828-003727";
-import * as store from "../store.js?v=20260828-003727";
-import * as records from "../records.js?v=20260828-003727";
+         statusLabel, formatNumber, typeLabel, ownerLabel } from "../i18n.js?v=20260828-004404";
+import { formatMoney } from "../money.js?v=20260828-004404";
+import { netWorth, periodRange, sportSummary } from "../finance.js?v=20260828-004404";
+import { categoriesOf } from "../schema.js?v=20260828-004404";
+import { recordList, recordRow, addButton, pageHeading, refresh, chipRow, sparkline } from "../render.js?v=20260828-004404";
+import { openRecordForm } from "../form.js?v=20260828-004404";
+import { navigate } from "../router.js?v=20260828-004404";
+import { importCsv } from "../csv.js?v=20260828-004404";
+import { openLabPaste, openProcedurePaste, rangeVerdict, verdictLabel } from "../labs.js?v=20260828-004404";
+import { byAnalyte, currentlyOutOfRange } from "../labs-parse.js?v=20260828-004404";
+import { labInsights, LAB_DISCLAIMER } from "../lab-insights.js?v=20260828-004404";
+import { routeFor, groupBySpecialist, ROUTING_NOTE } from "../lab-routing.js?v=20260828-004404";
+import { conditionPanels, offerableConditions, CONDITION_NOTE } from "../conditions.js?v=20260828-004404";
+import { partitionByResolution, resolutions, resolutionState, resolutionPreset, RESOLVED_NOTE } from "../resolved.js?v=20260828-004404";
+import { byExercise, weeklyVolume, freshRecords, TRAINING_NOTE } from "../training.js?v=20260828-004404";
+import { buildSummary, SUMMARY_NOTE } from "../doctor-summary.js?v=20260828-004404";
+import { assetsWithCosts, ASSET_COST_NOTE } from "../asset-costs.js?v=20260828-004404";
+import { describe as describeAnalyte, SOURCE as DESC_SOURCE } from "../lab-descriptions.js?v=20260828-004404";
+import { buildDays, comparePeriods, judge, dayTone, metricOf, monthlySeries, coverage, DAY_METRICS } from "../health-days.js?v=20260828-004404";
+import { healthInsights, DISCLAIMER } from "../insights.js?v=20260828-004404";
+import * as store from "../store.js?v=20260828-004404";
+import * as records from "../records.js?v=20260828-004404";
+import { secondOnly, total as withSecond } from "../display.js?v=20260828-004404";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -46,7 +47,7 @@ export function assetsView() {
   for (const record of all) groups.set(record.category, (groups.get(record.category) || 0) + 1);
 
   page.append(el("div", { class: "metric-grid" }, [
-    metricCard({ kicker: t("money.property"), value: money(worth.buckets.property),
+    metricCard({ kicker: t("money.property"), value: money(worth.buckets.property), second: secondOnly(worth.buckets.property),
                  note: ru() ? "только подтверждённое" : "confirmed only" }),
     metricCard({ kicker: ru() ? "ОБЪЕКТОВ" : "ITEMS", value: String(all.length) }),
     metricCard({ kicker: ru() ? "С ОЦЕНКОЙ" : "VALUED",
@@ -69,8 +70,8 @@ export function assetsView() {
   if (upkeep.length) {
     page.append(panel("records-panel upkeep-panel",
       panelHeader(ru() ? "СОДЕРЖАНИЕ" : "UPKEEP",
-        ru() ? `${money(upkeep.reduce((sum, item) => sum + (item.perMonthMinor || 0), 0))} в месяц`
-             : `${money(upkeep.reduce((sum, item) => sum + (item.perMonthMinor || 0), 0))} a month`),
+        ru() ? `${withSecond(upkeep.reduce((sum, item) => sum + (item.perMonthMinor || 0), 0))} в месяц`
+             : `${withSecond(upkeep.reduce((sum, item) => sum + (item.perMonthMinor || 0), 0))} a month`),
 
       el("div", { class: "upkeep-list" }, upkeep.map((item) => el("button", {
         class: "upkeep-row", type: "button",

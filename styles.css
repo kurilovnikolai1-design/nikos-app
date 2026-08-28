@@ -1249,6 +1249,14 @@ button.metric-card:hover { border-color: var(--border-strong); }
    first option. */
 .form-control.unset { color: var(--faint); border-style: dashed; }
 
+/* The same total in the second currency: under the figure, never beside it,
+   so it explains the number instead of competing with it. */
+.metric-second {
+  display: block; color: var(--faint);
+  font-size: var(--step-xs); font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
 @media (max-width: 480px) {
   .bank-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .bank-date { grid-column: 2; }

@@ -1,20 +1,21 @@
 /* Command Center, Inbox, Tasks, Projects. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260828-003727";
+import { el, panel, panelHeader, metricCard, emptyState, toast, openDialog } from "../ui.js?v=20260828-004404";
 import { t, getLocale, formatDate, relativeDays, countOf, plural, PLURALS, categoryLabel,
-         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260828-003727";
-import { formatMoney } from "../money.js?v=20260828-003727";
-import { netWorth, periodRange, sportSummary, inRange, valueInBase } from "../finance.js?v=20260828-003727";
-import { buildAttention } from "../attention.js?v=20260828-003727";
-import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260828-003727";
-import { openRecordForm } from "../form.js?v=20260828-003727";
-import { navigate } from "../router.js?v=20260828-003727";
-import { isVerified } from "../schema.js?v=20260828-003727";
-import * as store from "../store.js?v=20260828-003727";
-import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260828-003727";
-import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260828-003727";
-import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260828-003727";
-import * as records from "../records.js?v=20260828-003727";
+         statusLabel, priorityLabel, formatNumber, typeLabel } from "../i18n.js?v=20260828-004404";
+import { formatMoney } from "../money.js?v=20260828-004404";
+import { netWorth, periodRange, sportSummary, inRange, valueInBase } from "../finance.js?v=20260828-004404";
+import { buildAttention } from "../attention.js?v=20260828-004404";
+import { recordList, recordRow, addButton, pageHeading, refresh, sparkline } from "../render.js?v=20260828-004404";
+import { openRecordForm } from "../form.js?v=20260828-004404";
+import { navigate } from "../router.js?v=20260828-004404";
+import { isVerified } from "../schema.js?v=20260828-004404";
+import * as store from "../store.js?v=20260828-004404";
+import { projectsWithMoney, projectTotals, PROJECT_MONEY_NOTE } from "../project-money.js?v=20260828-004404";
+import { nextTaskFrom, isRepeating, frequencyLabel } from "../recurrence.js?v=20260828-004404";
+import { parseQuick, QUICK_NOTE } from "../quick-parse.js?v=20260828-004404";
+import * as records from "../records.js?v=20260828-004404";
+import { secondOnly, total as withSecond } from "../display.js?v=20260828-004404";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -93,6 +94,9 @@ export function commandView() {
       el("span", { class: "as-of", text: worth.hasAnything ? `${formatDate(new Date(), "short")} · ${base()}` : "" })),
     el("div", { class: "net-worth-line" }, [
       el("strong", { text: worth.hasAnything ? formatMoney(worth.totalMinor, base(), getLocale()) : "—" }),
+      worth.hasAnything && secondOnly(worth.totalMinor)
+        ? el("span", { class: "metric-second", text: `(${secondOnly(worth.totalMinor)})` })
+        : null,
       el("span", { class: "pending-badge", text: worth.hasAnything ? t("cmd.fromConfirmed") : t("cmd.addFirstAccount") })
     ]),
     el("p", { class: "privacy-subtitle", text: worth.hasAnything
@@ -361,8 +365,8 @@ function debtLine() {
 
   return el("div", { class: "debt-line" }, [
     el("span", { class: "debt-total", text: ru()
-      ? `Должен ${formatMoney(total, base(), getLocale())}`
-      : `You owe ${formatMoney(total, base(), getLocale())}` }),
+      ? `Должен ${withSecond(total)}`
+      : `You owe ${withSecond(total)}` }),
     el("small", { text: owed.length > 3
       ? `${named} ${ru() ? `и ещё ${owed.length - 3}` : `and ${owed.length - 3} more`}`
       : named })

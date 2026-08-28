@@ -1,22 +1,23 @@
 /* Capital, Debts, Cashflow, Investments, Crypto. */
 
-import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260828-003727";
+import { el, panel, panelHeader, metricCard, emptyState, toast, confirmDialog, openDialog } from "../ui.js?v=20260828-004404";
 import { t, getLocale, formatDate, relativeDays, countOf, categoryLabel, statusLabel,
-         plural, PLURALS, formatNumber, typeLabel, frequencyLabel, ownerLabel } from "../i18n.js?v=20260828-003727";
-import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260828-003727";
-import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear, byOwner, valueInBase } from "../finance.js?v=20260828-003727";
-import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260828-003727";
-import { refreshRates } from "../main-rates.js?v=20260828-003727";
-import { openBankImport } from "../csv.js?v=20260828-003727";
-import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260828-003727";
-import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260828-003727";
-import { QUOTES_NOTE } from "../quotes.js?v=20260828-003727";
-import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260828-003727";
-import { isVerified } from "../schema.js?v=20260828-003727";
-import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260828-003727";
-import { openRecordForm } from "../form.js?v=20260828-003727";
-import * as store from "../store.js?v=20260828-003727";
-import * as records from "../records.js?v=20260828-003727";
+         plural, PLURALS, formatNumber, typeLabel, frequencyLabel, ownerLabel } from "../i18n.js?v=20260828-004404";
+import { formatMoney, formatQuantity, parseAmount, CURRENCIES } from "../money.js?v=20260828-004404";
+import { netWorth, cashflow, recurringLoad, periodRange, buildSnapshot, monthlyEquivalentMinor, yearOverYear, byOwner, valueInBase } from "../finance.js?v=20260828-004404";
+import { budgetStatus, BUDGET_STATE, BUDGET_NOTE } from "../budget.js?v=20260828-004404";
+import { refreshRates } from "../main-rates.js?v=20260828-004404";
+import { openBankImport } from "../csv.js?v=20260828-004404";
+import { goalsOverview, totalOutstanding, GOAL_STATE, GOAL_NOTE } from "../goals.js?v=20260828-004404";
+import { portfolio, PNL_STATE, PNL_NOTE } from "../positions.js?v=20260828-004404";
+import { QUOTES_NOTE } from "../quotes.js?v=20260828-004404";
+import { cryptoUsdPrice, sourceLabel, isStale, missingRates, COINS } from "../rates.js?v=20260828-004404";
+import { isVerified } from "../schema.js?v=20260828-004404";
+import { recordList, addButton, pageHeading, exclusionNote, chipRow, refresh, sparkline } from "../render.js?v=20260828-004404";
+import { openRecordForm } from "../form.js?v=20260828-004404";
+import * as store from "../store.js?v=20260828-004404";
+import * as records from "../records.js?v=20260828-004404";
+import { secondOnly, total as withSecond } from "../display.js?v=20260828-004404";
 
 const ru = () => getLocale() === "ru";
 const base = () => store.getSettings().baseCurrency || "RUB";
@@ -149,15 +150,16 @@ export function capitalView() {
 
   page.append(el("div", { class: "metric-grid" }, [
     metricCard({ kicker: t("money.netWorth"), value: worth.hasAnything ? money(worth.totalMinor) : "—",
+                 second: worth.hasAnything ? secondOnly(worth.totalMinor) : null,
                  note: worth.hasAnything ? `${ru() ? "активы" : "assets"} ${money(worth.grossMinor)} − ${ru() ? "долги" : "debt"} ${money(worth.liabilityMinor)}` : ru() ? "Добавьте первый счёт" : "Add your first account",
                  tone: "wide" }),
-    metricCard({ kicker: t("money.liquid"), value: money(worth.buckets.liquid),
+    metricCard({ kicker: t("money.liquid"), value: money(worth.buckets.liquid), second: secondOnly(worth.buckets.liquid),
                  note: countOf(accounts.filter(isVerified).length, PLURALS.account) }),
-    metricCard({ kicker: t("money.invested"), value: money(worth.buckets.invested + worth.buckets.crypto),
+    metricCard({ kicker: t("money.invested"), value: money(worth.buckets.invested + worth.buckets.crypto), second: secondOnly(worth.buckets.invested + worth.buckets.crypto),
                  note: worth.buckets.crypto ? `${ru() ? "включая крипто" : "incl. crypto"} ${money(worth.buckets.crypto)}` : "" }),
-    metricCard({ kicker: t("money.property"), value: money(worth.buckets.property) }),
-    metricCard({ kicker: t("money.owedToMe"), value: money(worth.buckets.receivable) }),
-    metricCard({ kicker: t("money.debt"), value: money(worth.buckets.liability), tone: worth.buckets.liability ? "negative" : "" }),
+    metricCard({ kicker: t("money.property"), value: money(worth.buckets.property), second: secondOnly(worth.buckets.property) }),
+    metricCard({ kicker: t("money.owedToMe"), value: money(worth.buckets.receivable), second: secondOnly(worth.buckets.receivable) }),
+    metricCard({ kicker: t("money.debt"), value: money(worth.buckets.liability), second: secondOnly(worth.buckets.liability), tone: worth.buckets.liability ? "negative" : "" }),
     metricCard({ kicker: t("money.confidence"), value: worth.confidence === null ? "—" : `${worth.confidence}%`,
                  note: worth.excludedCount ? `${worth.excludedCount} ${ru() ? "не в расчёте" : "excluded"}` : ru() ? "всё подтверждено" : "all confirmed" })
   ]));
@@ -361,6 +363,9 @@ function budgetPanel() {
 
     el("div", { class: "budget-headline" }, [
       el("strong", { class: tone, text: money(status.remainingMinor) }),
+      secondOnly(status.remainingMinor)
+        ? el("span", { class: "metric-second", text: `(${secondOnly(status.remainingMinor)})` })
+        : null,
       el("small", { text: status.remainingMinor >= 0
         ? (ru() ? `${money(status.perDayMinor)} в день на ${countOf(status.daysLeft, PLURALS.day)}`
                 : `${money(status.perDayMinor)} a day for ${status.daysLeft} days`)
@@ -478,13 +483,14 @@ export function cashflowView() {
   ]));
 
   page.append(el("div", { class: "metric-grid" }, [
-    metricCard({ kicker: t("money.income"), value: money(flow.incomeMinor), tone: "positive" }),
-    metricCard({ kicker: t("money.expenses"), value: money(flow.expenseMinor), tone: "negative" }),
-    metricCard({ kicker: t("money.net"), value: money(flow.netMinor),
+    metricCard({ kicker: t("money.income"), value: money(flow.incomeMinor), second: secondOnly(flow.incomeMinor), tone: "positive" }),
+    metricCard({ kicker: t("money.expenses"), value: money(flow.expenseMinor), second: secondOnly(flow.expenseMinor), tone: "negative" }),
+    metricCard({ kicker: t("money.net"), value: money(flow.netMinor), second: secondOnly(flow.netMinor),
                  note: ru() ? "доходы минус расходы" : "income minus expenses",
                  tone: flow.netMinor >= 0 ? "positive" : "negative" }),
-    metricCard({ kicker: t("money.monthlyLoad"), value: money(recurring.expenseMinor),
-                 note: `${recurring.active.length} ${ru() ? "обязательств" : "obligations"}` })
+    metricCard({ kicker: t("money.monthlyLoad"), value: money(recurring.expenseMinor), second: secondOnly(recurring.expenseMinor),
+                 note: ru() ? countOf(recurring.active.length, PLURALS.obligation)
+                            : `${recurring.active.length} obligations` })
   ]));
 
   /* Only for the current month: "осталось до конца месяца" means nothing when
@@ -542,8 +548,8 @@ export function cashflowView() {
 
     page.append(panel("records-panel recurring-panel",
       panelHeader(ru() ? "УХОДИТ КАЖДЫЙ МЕСЯЦ" : "LEAVES EVERY MONTH",
-        ru() ? `${money(recurring.expenseMinor)} расходов, ${money(recurring.incomeMinor)} доходов`
-             : `${money(recurring.expenseMinor)} out, ${money(recurring.incomeMinor)} in`),
+        ru() ? `${withSecond(recurring.expenseMinor)} расходов, ${money(recurring.incomeMinor)} доходов`
+             : `${withSecond(recurring.expenseMinor)} out, ${money(recurring.incomeMinor)} in`),
 
       el("div", { class: "recurring-list" }, monthly.map(({ record, minor }) => el("button", {
         class: `recurring-row ${record.type}`, type: "button",
@@ -690,7 +696,7 @@ export function investmentsView() {
   }
 
   page.append(el("div", { class: "metric-grid" }, [
-    metricCard({ kicker: ru() ? "В РАСЧЁТЕ" : "COUNTED", value: money(worth.buckets.invested),
+    metricCard({ kicker: ru() ? "В РАСЧЁТЕ" : "COUNTED", value: money(worth.buckets.invested), second: secondOnly(worth.buckets.invested),
                  note: countOf(owned.length, PLURALS.record) }),
     metricCard({ kicker: ru() ? "ПРЕДЛОЖЕНО" : "PROPOSED", value: String(proposed.length),
                  note: ru() ? "не в капитале" : "not in net worth" }),

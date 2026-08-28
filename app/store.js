@@ -5,8 +5,8 @@
    the whole localStorage blob. Here the data lives in one place, the DOM is
    only ever a projection of it, and nothing is inferred from rendered text. */
 
-import * as persist from "./persist.js?v=20260828-003727";
-import { isLive, TYPES } from "./schema.js?v=20260828-003727";
+import * as persist from "./persist.js?v=20260828-004404";
+import { isLive, TYPES } from "./schema.js?v=20260828-004404";
 
 const DEFAULT_SETTINGS = {
   baseCurrency: "RUB",
@@ -19,7 +19,10 @@ const DEFAULT_SETTINGS = {
      an invitation, never a panel claiming everything is overspent. */
   budgetMinor: 0,
   /* Optional. Empty means foreign tickers are valued by hand. */
-  quotesApiKey: ""
+  quotesApiKey: "",
+  /* Totals carry this currency in brackets beside them. Dollars by default:
+     that is what most income here arrives in. */
+  secondCurrency: "USD"
 };
 
 const state = {
